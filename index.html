@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학생 건강조사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F8F1DC;
+    --card: #FFFFFF;
+    --ink: #1E2A3A;
+    --ink-soft: #6B6456;
+    --ink-faint: #9C9484;
+    --accent: #E3A63C;
+    --pill-blue-bg: #C7E3ED;
+    --pill-blue-ink: #1C4E63;
+    --khaki: #D9C9A0;
+    --khaki-ink: #3B3324;
+    --khaki-disabled: #ECE4CF;
+    --khaki-disabled-ink: #B4A98C;
+    --border: #ECE3C8;
+    --danger: #B5473E;
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-pill: 999px;
+    --shadow: 0 6px 24px rgba(30, 42, 58, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* 상단 바 */
+  .topbar {
+    background: var(--card);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow);
+    padding: 12px 12px 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .topbar-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+  }
+
+  .pill {
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+  }
+  .pill:active { transform: scale(0.97); }
+
+  .pill-blue {
+    background: var(--pill-blue-bg);
+    color: var(--pill-blue-ink);
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  /* 히어로 영역 */
+  .hero { margin: 32px 4px 24px; }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--pill-blue-ink);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .breadcrumb .spark { color: var(--accent); font-size: 14px; }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.35;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .info-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .info-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 4px;
+  }
+  .info-item:last-child { margin-bottom: 0; }
+  .info-item .mark { color: var(--accent); font-weight: 700; flex: none; }
+  .info-item .info-label { font-weight: 600; color: var(--ink); flex: none; }
+
+  /* 카드 */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 26px 24px;
+  }
+
+  .card.hidden { display: none; }
+
+  .field { margin-bottom: 18px; }
+  .field:last-of-type { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .field select,
+  .field input {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: #FDFBF4;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .field select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' stroke='%236B6456' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+  }
+
+  .field select:focus,
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .field select:disabled,
+  .field input:disabled {
+    color: var(--ink-faint);
+    background: #F4F0E4;
+    cursor: not-allowed;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .pill-khaki {
+    flex: 1;
+    padding: 14px 10px;
+    font-size: 14px;
+    background: var(--khaki);
+    color: var(--khaki-ink);
+    white-space: nowrap;
+  }
+  .pill-khaki:disabled {
+    background: var(--khaki-disabled);
+    color: var(--khaki-disabled-ink);
+    cursor: not-allowed;
+  }
+
+  .error {
+    color: var(--danger);
+    font-size: 13px;
+    margin: 14px 0 0;
+    line-height: 1.5;
+  }
+  .error:empty { display: none; }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  /* 설문 화면 */
+  .progress {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  .section-desc {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: 0 0 20px;
+  }
+
+  .question { margin-bottom: 22px; }
+  .question:last-child { margin-bottom: 0; }
+
+  .q-label {
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .q-required { color: var(--danger); margin-left: 3px; }
+
+  .option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .option-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 14.5px;
+    cursor: pointer;
+  }
+  .option-item input { flex: none; width: 17px; height: 17px; accent-color: var(--accent); }
+  .option-item.checked { border-color: var(--accent); background: #FDF6E8; }
+
+  .nav-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  .pill-outline {
+    flex: none;
+    padding: 14px 20px;
+    font-size: 14px;
+    background: #FFFFFF;
+    border: 1.5px solid var(--border);
+    color: var(--ink-soft);
+  }
+
+  /* 완료/미제출자 화면 */
+  .done-icon { font-size: 40px; margin-bottom: 10px; }
+  .done-title { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
+  .done-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin: 0; }
+
+  table.unsub {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    font-size: 14.5px;
+  }
+  table.unsub th, table.unsub td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.unsub th { color: var(--ink-soft); font-weight: 600; font-size: 12.5px; }
+
+  .empty-note {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+    padding: 24px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="topbar">
+    <div class="topbar-title"><span class="dot"></span> 학생 건강조사</div>
+    <button class="pill pill-blue" onclick="alert('관리자 페이지는 별도 주소로 준비 중입니다.')">관리자</button>
+  </div>
+
+  <div class="hero">
+    <div class="breadcrumb"><span class="spark">✦</span> <span id="schoolLine">보건실 안내</span></div>
+    <h1 id="pageTitle">학생 건강조사</h1>
+    <ul class="info-list" id="infoList"></ul>
+  </div>
+
+  <!-- 1. 학생 인증 화면 -->
+  <div class="card" id="authCard">
+    <div class="field">
+      <label>학년</label>
+      <select id="gradeSelect">
+        <option value="">학년 선택</option>
+        <option value="1">1학년</option>
+        <option value="2">2학년</option>
+        <option value="3">3학년</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>반</label>
+      <select id="classSelect" disabled>
+        <option value="">학년을 먼저 선택하세요</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>번호</label>
+      <input id="numberInput" type="number" min="1" placeholder="예: 5" disabled>
+    </div>
+    <div class="field">
+      <label>이름</label>
+      <input id="nameInput" type="text" placeholder="예: 홍길동" disabled>
+    </div>
+
+    <div class="btn-row">
+      <button class="pill pill-khaki" id="startSurveyBtn" disabled>건강조사 참여하기 →</button>
+      <button class="pill pill-khaki" id="checkUnsubmittedBtn" disabled>미제출자 조회 →</button>
+    </div>
+    <p class="error" id="authError"></p>
+  </div>
+
+  <!-- 2. 설문 화면 -->
+  <div class="card hidden" id="surveyCard">
+    <a class="back-link" id="surveyBackLink">← 처음으로</a>
+    <div class="progress" id="surveyProgress"></div>
+    <h2 class="section-title" id="sectionTitle"></h2>
+    <p class="section-desc" id="sectionDesc"></p>
+    <div id="questionList"></div>
+    <div class="nav-row">
+      <button class="pill pill-outline" id="prevBtn">이전</button>
+      <button class="pill pill-khaki" id="nextBtn" style="flex:1;">다음 →</button>
+    </div>
+  </div>
+
+  <!-- 3. 제출 완료 화면 -->
+  <div class="card hidden" id="doneCard" style="text-align:center;">
+    <div class="done-icon">🌤️</div>
+    <p class="done-title">제출이 완료되었습니다</p>
+    <p class="done-desc">응답해 주셔서 감사합니다.<br>추가로 알릴 사항이 있으면 보건실로 연락 주세요.</p>
+    <div class="btn-row">
+      <button class="pill pill-khaki" style="flex:1;" onclick="location.reload()">처음으로</button>
+    </div>
+  </div>
+
+  <!-- 4. 미제출자 조회 화면 -->
+  <div class="card hidden" id="unsubCard">
+    <a class="back-link" id="unsubBackLink">← 처음으로</a>
+    <div class="field">
+      <label>조회 대상</label>
+      <select id="formTypeSelect">
+        <option value="survey">학생 건강조사</option>
+        <option value="emergency_care">응급처치 동의서</option>
+        <option value="health_log_use">온라인보건일지 동의서</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="pill pill-khaki" style="flex:1;" id="fetchUnsubBtn">조회하기 →</button>
+    </div>
+    <div id="unsubResult"></div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================
+   설정
+   - API_BASE_URL 을 배포한 Apps Script 웹 앱 URL로 바꾸면 실제
+     구글시트와 연동됩니다. 비워두면 데모 데이터로 동작합니다
+     (박보건/김보건/이보건 예시 — health-survey-setup.gs와 동일).
+   ========================================================== */
+const CONFIG = {
+  API_BASE_URL: '', // 예: 'https://script.google.com/macros/s/XXXXXXXX/exec'
+  MAX_CLASS: 10
+};
+const DEMO_MODE = !CONFIG.API_BASE_URL;
+
+/* 데모 데이터 (health-survey-setup.gs 예시와 동일) */
+const DEMO = {
+  config: {
+    title: '[전체 학년] 2026년도 학생 건강조사',
+    period: '~2026년 3월 10일(화)까지',
+    target: '1학년, 2학년, 3학년 전교생',
+    notice: '조사된 자료는 개인정보로서 보호되며 1년이 지난 후 완전 폐기됩니다.',
+    is_open: 'TRUE'
+  },
+  questions: [
+    {section_no:2, section_title:'연락처 수집', section_desc:'해당 연락처는 응급상황 시에만 사용되며 1년 보유 후 완전 폐기합니다.', q_id:'q1', q_type:'text', q_label:'학생 본인의 연락처를 정확하게 적어주세요.', q_placeholder:'예: 010-1234-1234', required:true, options:[], show_if:''},
+    {section_no:2, section_title:'', section_desc:'', q_id:'q2', q_type:'dropdown', q_label:'연락 가능한 보호자와의 관계', q_placeholder:'', required:true, options:['부','모','조부모','기타'], show_if:''},
+    {section_no:2, section_title:'', section_desc:'', q_id:'q3', q_type:'text', q_label:'보호자의 연락처를 정확하게 적어주세요.', q_placeholder:'예: 010-1234-1234', required:true, options:[], show_if:''},
+    {section_no:3, section_title:'현재 가지고 있는 질병에 관한 조사', section_desc:'', q_id:'q10', q_type:'radio', q_label:'현재 병원에서 진단 받아 치료 중이거나 관리 중인 질병이 있으신가요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:4, section_title:'현재 가지고 있는 질병에 대해 자세하게 적어주세요.', section_desc:'', q_id:'q11', q_type:'checkbox', q_label:'질환명(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['제1형 당뇨','제2형 당뇨','성조숙증','정신적 질환','시력장애','청력장애','언어장애','희귀난치성질환','기타'], show_if:'q10=예'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_etc', q_type:'text', q_label:'기타 질환명', q_placeholder:'', required:false, options:[], show_if:'q11=기타'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q12', q_type:'radio', q_label:'치료 상태', q_placeholder:'', required:true, options:['치료 중','치료 종료'], show_if:'q10=예'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q13', q_type:'number', q_label:'발병 연도(서기)', q_placeholder:'예: 2023', required:true, options:[], show_if:'q10=예'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q14', q_type:'textarea', q_label:'치료 중인 병원명/복용 약물/치료 내용 (참고용)', q_placeholder:'', required:true, options:[], show_if:'q10=예'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q15', q_type:'textarea', q_label:'현재 상태 및 학교생활 시 주의사항', q_placeholder:'', required:true, options:[], show_if:'q10=예'},
+    {section_no:5, section_title:'알레르기 질환 관련 사항', section_desc:'', q_id:'q20', q_type:'radio', q_label:'가지고 있는 알레르기 질환이 있나요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q21', q_type:'checkbox', q_label:'알레르기 유형(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['식품','약물','동물','꽃가루','기타'], show_if:'q20=예'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q21_etc', q_type:'text', q_label:'기타 알레르기 유형', q_placeholder:'', required:false, options:[], show_if:'q21=기타'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q22', q_type:'textarea', q_label:'알레르기 세부 증상', q_placeholder:'', required:true, options:[], show_if:'q20=예'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q23', q_type:'radio', q_label:'미세먼지 민감군에 해당되십니까?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:7, section_title:'건강 생활 행동 조사', section_desc:'', q_id:'q30', q_type:'radio', q_label:'담배를 피워본 적이 있나요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:8, section_title:'흡연 행태 관련 조사', section_desc:'', q_id:'q31', q_type:'dropdown', q_label:'흡연을 시작한 학교급', q_placeholder:'', required:true, options:['초등학교','중학교','고등학교'], show_if:'q30=예'},
+    {section_no:8, section_title:'', section_desc:'', q_id:'q32', q_type:'dropdown', q_label:'흡연을 시작한 학년', q_placeholder:'', required:true, options:['1학년','2학년','3학년'], show_if:'q30=예'},
+    {section_no:8, section_title:'', section_desc:'', q_id:'q33', q_type:'number', q_label:'하루 흡연량 (개비 수)', q_placeholder:'예: 10', required:true, options:[], show_if:'q30=예'},
+    {section_no:8, section_title:'', section_desc:'', q_id:'q34', q_type:'checkbox', q_label:'흡연 이유(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['스트레스 해소','호기심','친구·선배 권유','습관','기타'], show_if:'q30=예'},
+    {section_no:8, section_title:'', section_desc:'', q_id:'q34_etc', q_type:'text', q_label:'기타 흡연 이유', q_placeholder:'', required:false, options:[], show_if:'q34=기타'},
+    {section_no:9, section_title:'음주 행태 관련 조사', section_desc:'', q_id:'q40', q_type:'radio', q_label:'술을 마신 적이 있나요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:10, section_title:'음주 행태 관련 조사', section_desc:'', q_id:'q41', q_type:'dropdown', q_label:'음주를 시작한 학교급', q_placeholder:'', required:true, options:['초등학교','중학교','고등학교'], show_if:'q40=예'},
+    {section_no:10, section_title:'', section_desc:'', q_id:'q42', q_type:'dropdown', q_label:'음주를 시작한 학년', q_placeholder:'', required:true, options:['1학년','2학년','3학년'], show_if:'q40=예'},
+    {section_no:10, section_title:'', section_desc:'', q_id:'q43', q_type:'radio', q_label:'음주 빈도', q_placeholder:'', required:true, options:['월 1~2회','주 1~2회','주 3회 이상','매일'], show_if:'q40=예'},
+    {section_no:10, section_title:'', section_desc:'', q_id:'q44', q_type:'checkbox', q_label:'음주 이유(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['스트레스','호기심','사회적 자리(모임 등)','습관','기타'], show_if:'q40=예'},
+    {section_no:10, section_title:'', section_desc:'', q_id:'q44_etc', q_type:'text', q_label:'기타 음주 이유', q_placeholder:'', required:false, options:[], show_if:'q44=기타'}
+  ],
+  roster: [
+    {grade:1, class:1, number:1, name:'박보건'},
+    {grade:1, class:1, number:2, name:'김보건'},
+    {grade:1, class:1, number:3, name:'이보건'}
+  ],
+  submittedSurveyNumbers: { '1-1': ['1','2','3'] }
+};
+
+/* 상태 */
+let QUESTIONS = [];
+let SECTION_LIST = [];
+let visibleSectionIndices = [];
+let currentPointer = 0;
+let answers = {};
+let student = { grade: '', class: '', number: '', name: '' };
+
+/* API 호출 헬퍼 (데모/실서버 겸용) */
+async function apiGet(action, params) {
+  if (DEMO_MODE) return demoGet_(action, params);
+  const qs = new URLSearchParams(Object.assign({ action }, params || {})).toString();
+  const res = await fetch(`${CONFIG.API_BASE_URL}?${qs}`);
+  return res.json();
+}
+async function apiPost(action, payload) {
+  if (DEMO_MODE) return demoPost_(action, payload);
+  const res = await fetch(CONFIG.API_BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  return res.json();
+}
+
+function demoGet_(action, params) {
+  if (action === 'init') return { ok: true, config: DEMO.config, questions: DEMO.questions };
+  if (action === 'unsubmitted') {
+    const key = `${params.grade}-${params.class}`;
+    const submitted = (params.formType === 'survey' || !params.formType)
+      ? (DEMO.submittedSurveyNumbers[key] || [])
+      : [];
+    const roster = DEMO.roster.filter(r => String(r.grade) === params.grade && String(r.class) === params.class);
+    const unsubmitted = roster.filter(r => submitted.indexOf(String(r.number)) === -1)
+      .map(r => ({ number: r.number, name: r.name }));
+    return { ok: true, unsubmitted };
+  }
+  return { ok: false, message: '알 수 없는 요청입니다.' };
+}
+function demoPost_(action, payload) {
+  if (action === 'verifyStudent') {
+    const match = DEMO.roster.find(r => String(r.grade) === String(payload.grade) &&
+      String(r.class) === String(payload.class) && String(r.number) === String(payload.number) &&
+      r.name === payload.name);
+    return match ? { ok: true } : { ok: false, message: '(데모) 입력하신 정보와 일치하는 학생이 없습니다. 박보건/김보건/이보건(1학년 1반 1~3번)으로 시도해 보세요.' };
+  }
+  if (action === 'submitSurvey') {
+    console.log('[데모 제출]', payload);
+    return { ok: true, submission_id: 'DEMO-' + Date.now() };
+  }
+  return { ok: false, message: '알 수 없는 요청입니다.' };
+}
+
+/* 화면 전환 유틸 */
+function showCard(id) {
+  ['authCard','surveyCard','doneCard','unsubCard'].forEach(cid => {
+    document.getElementById(cid).classList.toggle('hidden', cid !== id);
+  });
+}
+
+/* 초기화 */
+async function init() {
+  const res = await apiGet('init', {});
+  if (!res.ok) { alert('설문 정보를 불러오지 못했습니다.'); return; }
+
+  document.getElementById('pageTitle').textContent = res.config.title || '학생 건강조사';
+  renderInfoList_(res.config);
+
+  QUESTIONS = res.questions;
+  buildSectionList_();
+
+  if (String(res.config.is_open) === 'FALSE') {
+    document.getElementById('authCard').innerHTML =
+      '<p class="empty-note">현재 건강조사 접수 기간이 아닙니다.</p>';
+  }
+}
+
+function renderInfoList_(config) {
+  const items = [
+    { label: '제출기한', value: config.period },
+    { label: '대상', value: config.target },
+    { label: '안내', value: config.notice }
+  ].filter(it => it.value);
+
+  document.getElementById('infoList').innerHTML = items.map(it =>
+    `<li class="info-item"><span class="mark">–</span><span class="info-label">${it.label}</span><span>${it.value}</span></li>`
+  ).join('');
+}
+
+function buildSectionList_() {
+  const map = {};
+  let currentTitle = '', currentDesc = '';
+  QUESTIONS.forEach(q => {
+    if (q.section_title) currentTitle = q.section_title;
+    if (q.section_desc) currentDesc = q.section_desc;
+    if (!map[q.section_no]) {
+      map[q.section_no] = { section_no: q.section_no, title: currentTitle, desc: currentDesc, questions: [] };
+    }
+    map[q.section_no].questions.push(q);
+  });
+  SECTION_LIST = Object.values(map).sort((a, b) => a.section_no - b.section_no);
+}
+
+/* show_if 평가 */
+function evalShowIf(showIf) {
+  if (!showIf) return true;
+  const [qId, val] = showIf.split('=');
+  const current = answers[qId];
+  if (Array.isArray(current)) return current.indexOf(val) !== -1;
+  return String(current || '') === val;
+}
+
+function sectionGate_(section) {
+  const gating = section.questions.find(q => q.show_if);
+  return gating ? evalShowIf(gating.show_if) : true;
+}
+
+function computeVisibleSections_() {
+  return SECTION_LIST.map((s, i) => i).filter(i => sectionGate_(SECTION_LIST[i]));
+}
+
+/* 학생 인증 폼 로직 */
+const gradeSelect = document.getElementById('gradeSelect');
+const classSelect = document.getElementById('classSelect');
+const numberInput = document.getElementById('numberInput');
+const nameInput = document.getElementById('nameInput');
+const startSurveyBtn = document.getElementById('startSurveyBtn');
+const checkUnsubmittedBtn = document.getElementById('checkUnsubmittedBtn');
+const authError = document.getElementById('authError');
+
+gradeSelect.addEventListener('change', () => {
+  classSelect.innerHTML = '<option value="">반 선택</option>';
+  if (gradeSelect.value) {
+    for (let c = 1; c <= CONFIG.MAX_CLASS; c++) {
+      classSelect.innerHTML += `<option value="${c}">${c}반</option>`;
+    }
+    classSelect.disabled = false;
+  } else {
+    classSelect.disabled = true;
+    classSelect.innerHTML = '<option value="">학년을 먼저 선택하세요</option>';
+  }
+  numberInput.disabled = true; nameInput.disabled = true;
+  numberInput.value = ''; nameInput.value = '';
+  refreshButtons_();
+});
+
+classSelect.addEventListener('change', () => {
+  const enabled = !!classSelect.value;
+  numberInput.disabled = !enabled;
+  nameInput.disabled = !enabled;
+  refreshButtons_();
+});
+
+[numberInput, nameInput].forEach(el => el.addEventListener('input', refreshButtons_));
+
+function refreshButtons_() {
+  authError.textContent = '';
+  checkUnsubmittedBtn.disabled = !(gradeSelect.value && classSelect.value);
+  startSurveyBtn.disabled = !(gradeSelect.value && classSelect.value && numberInput.value && nameInput.value.trim());
+}
+
+startSurveyBtn.addEventListener('click', async () => {
+  student = { grade: gradeSelect.value, class: classSelect.value, number: numberInput.value, name: nameInput.value.trim() };
+  startSurveyBtn.disabled = true;
+  startSurveyBtn.textContent = '확인 중…';
+  const res = await apiPost('verifyStudent', student);
+  startSurveyBtn.textContent = '건강조사 참여하기 →';
+  refreshButtons_();
+  if (!res.ok) { authError.textContent = res.message || '확인 중 오류가 발생했습니다.'; return; }
+
+  answers = {};
+  visibleSectionIndices = computeVisibleSections_();
+  currentPointer = 0;
+  showCard('surveyCard');
+  renderSection_();
+});
+
+checkUnsubmittedBtn.addEventListener('click', () => {
+  showCard('unsubCard');
+  document.getElementById('unsubResult').innerHTML = '';
+  document.getElementById('unsubCard').dataset.grade = gradeSelect.value;
+  document.getElementById('unsubCard').dataset.class = classSelect.value;
+});
+
+/* 설문 렌더링 */
+const questionListEl = document.getElementById('questionList');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+function renderSection_() {
+  const secIdx = visibleSectionIndices[currentPointer];
+  const section = SECTION_LIST[secIdx];
+
+  document.getElementById('surveyProgress').textContent =
+    `${currentPointer + 1} / ${visibleSectionIndices.length} 섹션`;
+  document.getElementById('sectionTitle').textContent = section.title;
+  document.getElementById('sectionDesc').textContent = section.desc;
+
+  questionListEl.innerHTML = '';
+  section.questions.forEach(q => {
+    if (!evalShowIf(q.show_if)) return;
+    questionListEl.appendChild(renderQuestion_(q));
+  });
+
+  prevBtn.style.visibility = currentPointer === 0 ? 'hidden' : 'visible';
+  nextBtn.textContent = currentPointer === visibleSectionIndices.length - 1 ? '제출하기' : '다음 →';
+}
+
+function renderQuestion_(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'question';
+  const label = document.createElement('div');
+  label.className = 'q-label';
+  label.innerHTML = q.q_label + (q.required ? '<span class="q-required">*</span>' : '');
+  wrap.appendChild(label);
+
+  if (q.q_type === 'text' || q.q_type === 'number') {
+    const input = document.createElement('input');
+    input.type = q.q_type;
+    input.placeholder = q.q_placeholder || '';
+    input.value = answers[q.q_id] || '';
+    input.addEventListener('input', () => { answers[q.q_id] = input.value; });
+    wrap.appendChild(input);
+  } else if (q.q_type === 'textarea') {
+    const ta = document.createElement('textarea');
+    ta.rows = 3;
+    ta.style.cssText = 'width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--border);font-family:inherit;font-size:15px;resize:vertical;';
+    ta.value = answers[q.q_id] || '';
+    ta.addEventListener('input', () => { answers[q.q_id] = ta.value; });
+    wrap.appendChild(ta);
+  } else if (q.q_type === 'dropdown') {
+    const sel = document.createElement('select');
+    sel.style.cssText = 'width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--border);font-family:inherit;font-size:15px;';
+    sel.innerHTML = '<option value="">선택</option>' + q.options.map(o => `<option value="${o}">${o}</option>`).join('');
+    sel.value = answers[q.q_id] || '';
+    sel.addEventListener('change', () => { answers[q.q_id] = sel.value; refreshVisibleFields_(); });
+    wrap.appendChild(sel);
+  } else if (q.q_type === 'radio' || q.q_type === 'checkbox') {
+    const list = document.createElement('div');
+    list.className = 'option-list';
+    const current = answers[q.q_id] || (q.q_type === 'checkbox' ? [] : '');
+    q.options.forEach(opt => {
+      const item = document.createElement('label');
+      item.className = 'option-item';
+      const checked = q.q_type === 'checkbox' ? current.indexOf(opt) !== -1 : current === opt;
+      if (checked) item.classList.add('checked');
+      item.innerHTML = `<input type="${q.q_type}" name="${q.q_id}" value="${opt}" ${checked ? 'checked' : ''}> ${opt}`;
+      item.querySelector('input').addEventListener('change', () => {
+        if (q.q_type === 'radio') {
+          answers[q.q_id] = opt;
+        } else {
+          const arr = answers[q.q_id] || [];
+          const idx = arr.indexOf(opt);
+          if (idx === -1) arr.push(opt); else arr.splice(idx, 1);
+          answers[q.q_id] = arr;
+        }
+        refreshVisibleFields_();
+      });
+      list.appendChild(item);
+    });
+    wrap.appendChild(list);
+  }
+  return wrap;
+}
+
+function refreshVisibleFields_() {
+  renderSection_();
+}
+
+function validateCurrentSection_() {
+  const secIdx = visibleSectionIndices[currentPointer];
+  const section = SECTION_LIST[secIdx];
+  for (const q of section.questions) {
+    if (!evalShowIf(q.show_if) || !q.required) continue;
+    const v = answers[q.q_id];
+    if (v === undefined || v === '' || (Array.isArray(v) && v.length === 0)) {
+      return `"${q.q_label}" 항목은 필수 입력입니다.`;
+    }
+  }
+  return null;
+}
+
+nextBtn.addEventListener('click', async () => {
+  const err = validateCurrentSection_();
+  if (err) { alert(err); return; }
+
+  if (currentPointer === visibleSectionIndices.length - 1) {
+    nextBtn.disabled = true;
+    nextBtn.textContent = '제출 중…';
+    const flatAnswers = {};
+    Object.keys(answers).forEach(k => {
+      flatAnswers[k] = Array.isArray(answers[k]) ? answers[k].join(',') : answers[k];
+    });
+    const res = await apiPost('submitSurvey', Object.assign({}, student, { answers: flatAnswers }));
+    nextBtn.disabled = false;
+    if (!res.ok) { alert(res.message || '제출 중 오류가 발생했습니다.'); return; }
+    showCard('doneCard');
+    return;
+  }
+
+  currentPointer++;
+  const recomputed = computeVisibleSections_();
+  currentPointer = Math.min(currentPointer, recomputed.length - 1);
+  visibleSectionIndices = recomputed;
+  renderSection_();
+});
+
+prevBtn.addEventListener('click', () => {
+  if (currentPointer > 0) { currentPointer--; renderSection_(); }
+});
+
+document.getElementById('surveyBackLink').addEventListener('click', () => {
+  if (confirm('처음으로 돌아가면 입력한 내용이 사라집니다. 계속할까요?')) location.reload();
+});
+
+/* 미제출자 조회 */
+document.getElementById('unsubBackLink').addEventListener('click', () => showCard('authCard'));
+
+document.getElementById('fetchUnsubBtn').addEventListener('click', async () => {
+  const card = document.getElementById('unsubCard');
+  const formType = document.getElementById('formTypeSelect').value;
+  const res = await apiGet('unsubmitted', { grade: card.dataset.grade, class: card.dataset.class, formType });
+  const resultEl = document.getElementById('unsubResult');
+  if (!res.ok) { resultEl.innerHTML = `<p class="empty-note">${res.message}</p>`; return; }
+  if (res.unsubmitted.length === 0) {
+    resultEl.innerHTML = '<p class="empty-note">🎉 전원 제출 완료했습니다!</p>';
+    return;
+  }
+  resultEl.innerHTML = `
+    <table class="unsub">
+      <thead><tr><th>번호</th><th>이름</th></tr></thead>
+      <tbody>${res.unsubmitted.map(r => `<tr><td>${r.number}</td><td>${r.name}</td></tr>`).join('')}</tbody>
+    </table>`;
+});
+
+init();
+</script>
+</body>
+</html>
