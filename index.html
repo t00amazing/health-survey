@@ -21,6 +21,7 @@
     --khaki-disabled: #ECE4CF;
     --khaki-disabled-ink: #B4A98C;
     --border: #ECE3C8;
+    --border-strong: #17140F;
     --danger: #B5473E;
     --radius-lg: 22px;
     --radius-md: 14px;
@@ -47,6 +48,7 @@
   /* 상단 바 */
   .topbar {
     background: var(--card);
+    border: 2px solid var(--border-strong);
     border-radius: var(--radius-pill);
     box-shadow: var(--shadow);
     padding: 12px 12px 12px 20px;
@@ -73,7 +75,7 @@
   }
 
   .pill {
-    border: none;
+    border: 2px solid var(--border-strong);
     border-radius: var(--radius-pill);
     font-family: inherit;
     font-weight: 600;
@@ -139,6 +141,7 @@
   /* 카드 */
   .card {
     background: var(--card);
+    border: 2px solid var(--border-strong);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
     padding: 26px 24px;
@@ -158,11 +161,14 @@
   }
 
   .field select,
-  .field input {
+  .field input,
+  .q-select,
+  .q-textarea,
+  .q-input {
     width: 100%;
     padding: 13px 16px;
     border-radius: var(--radius-md);
-    border: 1.5px solid var(--border);
+    border: 2px solid var(--border-strong);
     background: #FDFBF4;
     font-family: inherit;
     font-size: 15px;
@@ -171,17 +177,45 @@
     -webkit-appearance: none;
   }
 
-  .field select {
+  .field select,
+  .q-select {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' stroke='%236B6456' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     background-repeat: no-repeat;
     background-position: right 14px center;
     padding-right: 40px;
   }
 
+  .q-textarea { resize: vertical; }
+
+  .q-notice {
+    background: #FDF6E8;
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .q-notice ul { margin: 0; padding-left: 18px; }
+  .q-notice li { margin-bottom: 8px; }
+  .q-notice li:last-child { margin-bottom: 0; }
+  .q-notice strong { font-weight: 700; }
+
   .field select:focus,
-  .field input:focus {
+  .field input:focus,
+  .q-select:focus,
+  .q-textarea:focus,
+  .q-input:focus {
     outline: none;
     border-color: var(--accent);
+  }
+
+  .question.field-error .q-label { color: var(--danger); }
+  .question.field-error .q-input,
+  .question.field-error .q-select,
+  .question.field-error .q-textarea,
+  .question.field-error .option-item {
+    border-color: var(--danger);
   }
 
   .field select:disabled,
@@ -273,13 +307,24 @@
     align-items: center;
     gap: 10px;
     padding: 12px 14px;
-    border: 1.5px solid var(--border);
+    border: 2px solid var(--border-strong);
     border-radius: var(--radius-md);
     font-size: 14.5px;
     cursor: pointer;
   }
   .option-item input { flex: none; width: 17px; height: 17px; accent-color: var(--accent); }
   .option-item.checked { border-color: var(--accent); background: #FDF6E8; }
+
+  /* 체크된 옵션 바로 아래에 이어지는 세부 입력 문항 */
+  .nested-question {
+    margin: -2px 0 0 18px;
+    padding: 12px 14px;
+    border: 2px dashed var(--border-strong);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: #FBF7EA;
+  }
+  .nested-question .q-label { margin-bottom: 8px; font-size: 13.5px; }
 
   .nav-row {
     display: flex;
@@ -291,7 +336,7 @@
     padding: 14px 20px;
     font-size: 14px;
     background: #FFFFFF;
-    border: 1.5px solid var(--border);
+    border: 2px solid var(--border-strong);
     color: var(--ink-soft);
   }
 
@@ -436,29 +481,36 @@ const DEMO = {
     {section_no:2, section_title:'', section_desc:'', q_id:'q2', q_type:'dropdown', q_label:'연락 가능한 보호자와의 관계', q_placeholder:'', required:true, options:['부','모','조부모','기타'], show_if:''},
     {section_no:2, section_title:'', section_desc:'', q_id:'q3', q_type:'text', q_label:'보호자의 연락처를 정확하게 적어주세요.', q_placeholder:'010-1234-1234', required:true, options:[], show_if:'', q_format:'phone'},
     {section_no:3, section_title:'현재 가지고 있는 질병에 관한 조사', section_desc:'', q_id:'q10', q_type:'radio', q_label:'현재 병원에서 진단 받아 치료 중이거나 관리 중인 질병이 있으신가요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
-    {section_no:4, section_title:'현재 가지고 있는 질병에 대해 자세하게 적어주세요.', section_desc:'', q_id:'q11', q_type:'checkbox', q_label:'질환명(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['제1형 당뇨','제2형 당뇨','성조숙증','우울증 등의 정서적 질환','시력장애','청력장애','언어장애','지체장애','희귀난치성질환','기타'], show_if:'q10=예'},
-    {section_no:4, section_title:'', section_desc:'', q_id:'q11_emotion_detail', q_type:'text', q_label:'정서적 질환 세부 진단명', q_placeholder:'예: 우울증, 불안장애 등', required:false, options:[], show_if:'q11=우울증 등의 정서적 질환'},
-    {section_no:4, section_title:'', section_desc:'', q_id:'q11_rare_detail', q_type:'text', q_label:'희귀난치성질환 세부 진단명', q_placeholder:'', required:false, options:[], show_if:'q11=희귀난치성질환'},
-    {section_no:4, section_title:'', section_desc:'', q_id:'q11_disability_grade', q_type:'text', q_label:'장애등급', q_placeholder:'예: 3급 또는 심한 장애', required:false, options:[], show_if:'q11=지체장애'},
-    {section_no:4, section_title:'', section_desc:'', q_id:'q11_etc', q_type:'text', q_label:'기타 질환명', q_placeholder:'', required:false, options:[], show_if:'q11=기타'},
+    {section_no:4, section_title:'현재 가지고 있는 질병에 대해 자세하게 적어주세요.', section_desc:'', q_id:'q11', q_type:'checkbox', q_label:'질환명(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['제1형 당뇨','제2형 당뇨','성조숙증','우울증 등의 정서적 질환','천식','아토피','시력장애','청력장애','언어장애','지체장애','희귀난치성질환','기타'], show_if:'q10=예'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_atopy_area', q_type:'text', q_label:'아토피 병변 부위', q_placeholder:'예: 팔 안쪽, 목, 무릎 뒤쪽 등', required:true, options:[], show_if:'q11=아토피'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_atopy_severity', q_type:'radio', q_label:'증상의 중증도', q_placeholder:'', required:true, options:['상','중','하'], show_if:'q11=아토피'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_emotion_detail', q_type:'text', q_label:'정서적 질환 세부 진단명', q_placeholder:'예: 우울증, 불안장애 등', required:true, options:[], show_if:'q11=우울증 등의 정서적 질환'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_rare_detail', q_type:'text', q_label:'희귀난치성질환 세부 진단명', q_placeholder:'', required:true, options:[], show_if:'q11=희귀난치성질환'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_disability_grade', q_type:'text', q_label:'장애등급', q_placeholder:'예: 3급 또는 심한 장애', required:true, options:[], show_if:'q11=시력장애|청력장애|언어장애|지체장애'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_etc', q_type:'text', q_label:'기타 질환명', q_placeholder:'', required:true, options:[], show_if:'q11=기타'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q12', q_type:'radio', q_label:'치료 상태', q_placeholder:'', required:true, options:['치료 중','치료 종료'], show_if:'q10=예'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q13', q_type:'number', q_label:'발병 연도(서기)', q_placeholder:'예: 2023', required:true, options:[], show_if:'q10=예'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q14', q_type:'textarea', q_label:'치료 중인 병원명/복용 약물/치료 내용 (참고용)', q_placeholder:'', required:true, options:[], show_if:'q10=예'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q15', q_type:'textarea', q_label:'현재 상태 및 학교생활 시 주의사항', q_placeholder:'', required:true, options:[], show_if:'q10=예'},
     {section_no:5, section_title:'알레르기 질환 관련 사항', section_desc:'', q_id:'q20', q_type:'radio', q_label:'가지고 있는 알레르기 질환이 있나요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
     {section_no:5, section_title:'', section_desc:'', q_id:'q21', q_type:'checkbox', q_label:'알레르기 유형(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['식품','약물','동물','꽃가루','기타'], show_if:'q20=예'},
-    {section_no:5, section_title:'', section_desc:'', q_id:'q21_etc', q_type:'text', q_label:'기타 알레르기 유형', q_placeholder:'', required:false, options:[], show_if:'q21=기타'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q21_food_detail', q_type:'text', q_label:'식품명', q_placeholder:'예: 새우, 우유, 땅콩 등', required:true, options:[], show_if:'q21=식품'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q21_drug_detail', q_type:'text', q_label:'약품명', q_placeholder:'예: 페니실린 등', required:true, options:[], show_if:'q21=약물'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q21_animal_detail', q_type:'text', q_label:'동물명', q_placeholder:'예: 고양이, 개 등', required:true, options:[], show_if:'q21=동물'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q21_etc', q_type:'text', q_label:'기타 알레르기 유형', q_placeholder:'', required:true, options:[], show_if:'q21=기타'},
     {section_no:5, section_title:'', section_desc:'', q_id:'q22', q_type:'textarea', q_label:'알레르기 세부 증상', q_placeholder:'', required:true, options:[], show_if:'q20=예'},
-    {section_no:5, section_title:'', section_desc:'', q_id:'q23', q_type:'radio', q_label:'미세먼지 민감군에 해당되십니까?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q23', q_type:'radio', q_label:'미세먼지 민감군에 해당되십니까? (미세먼지 심한 날 주의를 요하는 경우 기록)(예, 천식, 정도가 심한 아토피, 호흡기질환, 심혈관 질환 등)', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q23_notice', q_type:'notice', q_label:'🌟 미세먼지 민감군관련 안내 사항', q_placeholder:'<ul><li>미세먼지 관련 기저질환(천식, 알레르기, 호흡기 질환, 심혈관 질환 등)이 있는 경우 <strong>의사의 진단서 또는 의사 소견서</strong> 등을 학교로 제출 바랍니다.</li><li>등교 시간대 거주지 또는 학교 주변 실시간 미세먼지 농도가 \'나쁨\' 이상이며, 학부모가 학교에 사전 연락(전화, 문자)한 경우 <strong>\'질병 결석\'</strong>으로 처리 가능합니다.</li></ul>', required:false, options:[], show_if:'q23=예'},
+    {section_no:5, section_title:'', section_desc:'', q_id:'q23_confirm', q_type:'checkbox', q_label:'위 안내 사항을 자세히 읽고 확인하셨나요?', q_placeholder:'', required:true, options:['위 안내 사항을 확인했습니다'], show_if:'q23=예'},
     {section_no:7, section_title:'건강 생활 행동 조사', section_desc:'', q_id:'q30', q_type:'radio', q_label:'담배를 피워본 적이 있나요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
     {section_no:8, section_title:'흡연 행태 관련 조사', section_desc:'', q_id:'q31', q_type:'dropdown', q_label:'흡연을 시작한 학교급', q_placeholder:'', required:true, options:['초등학교','중학교','고등학교'], show_if:'q30=예'},
-    {section_no:8, section_title:'', section_desc:'', q_id:'q32', q_type:'dropdown', q_label:'흡연을 시작한 학년', q_placeholder:'', required:true, options:['1학년','2학년','3학년'], show_if:'q30=예'},
+    {section_no:8, section_title:'', section_desc:'', q_id:'q32', q_type:'dropdown', q_label:'흡연을 시작한 학년', q_placeholder:'', required:true, options:['1학년','2학년','3학년','4학년','5학년','6학년'], show_if:'q30=예'},
     {section_no:8, section_title:'', section_desc:'', q_id:'q33', q_type:'number', q_label:'하루 흡연량 (개비 수)', q_placeholder:'예: 10', required:true, options:[], show_if:'q30=예'},
     {section_no:8, section_title:'', section_desc:'', q_id:'q34', q_type:'checkbox', q_label:'흡연 이유(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['스트레스 해소','호기심','친구·선배 권유','습관','기타'], show_if:'q30=예'},
     {section_no:8, section_title:'', section_desc:'', q_id:'q34_etc', q_type:'text', q_label:'기타 흡연 이유', q_placeholder:'', required:false, options:[], show_if:'q34=기타'},
     {section_no:9, section_title:'음주 행태 관련 조사', section_desc:'', q_id:'q40', q_type:'radio', q_label:'술을 마신 적이 있나요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
     {section_no:10, section_title:'음주 행태 관련 조사', section_desc:'', q_id:'q41', q_type:'dropdown', q_label:'음주를 시작한 학교급', q_placeholder:'', required:true, options:['초등학교','중학교','고등학교'], show_if:'q40=예'},
-    {section_no:10, section_title:'', section_desc:'', q_id:'q42', q_type:'dropdown', q_label:'음주를 시작한 학년', q_placeholder:'', required:true, options:['1학년','2학년','3학년'], show_if:'q40=예'},
+    {section_no:10, section_title:'', section_desc:'', q_id:'q42', q_type:'dropdown', q_label:'음주를 시작한 학년', q_placeholder:'', required:true, options:['1학년','2학년','3학년','4학년','5학년','6학년'], show_if:'q40=예'},
     {section_no:10, section_title:'', section_desc:'', q_id:'q43', q_type:'radio', q_label:'음주 빈도', q_placeholder:'', required:true, options:['월 1~2회','주 1~2회','주 3회 이상','매일'], show_if:'q40=예'},
     {section_no:10, section_title:'', section_desc:'', q_id:'q44', q_type:'checkbox', q_label:'음주 이유(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['스트레스','호기심','사회적 자리(모임 등)','습관','기타'], show_if:'q40=예'},
     {section_no:10, section_title:'', section_desc:'', q_id:'q44_etc', q_type:'text', q_label:'기타 음주 이유', q_placeholder:'', required:false, options:[], show_if:'q44=기타'}
@@ -581,18 +633,35 @@ function formatPhone_(raw) {
   return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
 }
 
-/* show_if 평가 */
+/* show_if 평가 — "q11=지체장애" 처럼 단일 값, "q11=시력장애|청력장애" 처럼 |로 여러 값 지정 가능 */
 function evalShowIf(showIf) {
   if (!showIf) return true;
-  const [qId, val] = showIf.split('=');
+  const [qId, valStr] = showIf.split('=');
+  const values = valStr.split('|');
   const current = answers[qId];
-  if (Array.isArray(current)) return current.indexOf(val) !== -1;
-  return String(current || '') === val;
+  if (Array.isArray(current)) return values.some(v => current.indexOf(v) !== -1);
+  return values.indexOf(String(current || '')) !== -1;
+}
+
+function showIfParentId_(showIf) {
+  return showIf ? showIf.split('=')[0] : null;
+}
+function showIfValues_(showIf) {
+  return showIf ? showIf.split('=')[1].split('|') : [];
 }
 
 function sectionGate_(section) {
-  const gating = section.questions.find(q => q.show_if);
-  return gating ? evalShowIf(gating.show_if) : true;
+  const qIds = section.questions.map(q => q.q_id);
+  // 이 섹션의 문항이 참조하는 show_if 중, "같은 섹션 안의 다른 문항"이 아니라
+  // "다른 섹션의 문항"을 가리키는 것만 진짜 섹션 표시 조건으로 인정한다.
+  // (그렇지 않으면 예: 알레르기 섹션의 "기타 알레르기 유형(q21_etc)"이 같은 섹션의
+  //  q21을 참조하는 것을, 섹션 전체를 여닫는 조건으로 잘못 오인해 섹션 자체가
+  //  사라져버리는 문제가 있었음)
+  const externalGate = section.questions.find(q => {
+    const parentId = showIfParentId_(q.show_if);
+    return parentId && qIds.indexOf(parentId) === -1;
+  });
+  return externalGate ? evalShowIf(externalGate.show_if) : true;
 }
 
 function computeVisibleSections_() {
@@ -679,16 +748,32 @@ function renderSection_() {
   questionListEl.innerHTML = '';
   section.questions.forEach(q => {
     if (!evalShowIf(q.show_if)) return;
-    questionListEl.appendChild(renderQuestion_(q));
+    if (isChildQuestion_(q, section.questions)) return; // 부모 문항이 자기 아래에 직접 그려줌
+    questionListEl.appendChild(renderQuestion_(q, section.questions));
   });
 
   prevBtn.style.visibility = posInVisible === 0 ? 'hidden' : 'visible';
   nextBtn.textContent = posInVisible === visible.length - 1 ? '제출하기' : '다음 →';
 }
 
-function renderQuestion_(q) {
+// q.show_if가 같은 섹션 안의 다른 문항을 가리키면 "자식 문항"으로 보고
+// 부모 문항(체크박스/라디오) 아래에 직접 렌더링한다. (예: q11_etc → q11의 자식)
+function isChildQuestion_(q, siblingQuestions) {
+  const parentId = showIfParentId_(q.show_if);
+  if (!parentId) return false;
+  return siblingQuestions.some(sq => sq.q_id === parentId);
+}
+function findChildrenFor_(parentQId, siblingQuestions) {
+  return siblingQuestions.filter(sq => showIfParentId_(sq.show_if) === parentQId);
+}
+
+// "흡연/음주 시작 학년"처럼 다른 답변(학교급)에 따라 선택지 개수가 달라지는 문항
+const GRADE_DROPDOWN_PARENT = { q32: 'q31', q42: 'q41' };
+
+function renderQuestion_(q, siblingQuestions) {
   const wrap = document.createElement('div');
   wrap.className = 'question';
+  wrap.dataset.qid = q.q_id;
   const label = document.createElement('div');
   label.className = 'q-label';
   label.innerHTML = q.q_label + (q.required ? '<span class="q-required">*</span>' : '');
@@ -696,7 +781,7 @@ function renderQuestion_(q) {
 
   if (q.q_type === 'text' || q.q_type === 'number') {
     const input = document.createElement('input');
-    input.type = q.q_type;
+    input.className = 'q-input';
     input.placeholder = q.q_placeholder || '';
     input.value = answers[q.q_id] || '';
     if (q.q_format === 'phone') {
@@ -704,24 +789,55 @@ function renderQuestion_(q) {
       input.inputMode = 'numeric';
       input.maxLength = 13; // 010-1234-5678
       input.addEventListener('input', () => {
-        input.value = formatPhone_(input.value);
+        // 하이픈을 직접 입력하다가 자동 포맷이 지워버려 커서가 끝으로 튀는
+        // 문제가 있어, 포맷 전후 길이 차이만큼 커서 위치를 보정해준다.
+        const cursorPos = input.selectionStart;
+        const beforeLen = input.value.length;
+        const formatted = formatPhone_(input.value);
+        input.value = formatted;
+        const newPos = Math.max(0, cursorPos + (formatted.length - beforeLen));
+        input.setSelectionRange(newPos, newPos);
+        answers[q.q_id] = formatted;
+      });
+    } else if (q.q_type === 'number') {
+      // 네이티브 number 입력은 브라우저에 따라 값이 비정상적으로 비워지는 경우가 있어
+      // text + 숫자 필터링 방식으로 안전하게 처리한다.
+      input.type = 'text';
+      input.inputMode = 'numeric';
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/[^0-9]/g, '');
         answers[q.q_id] = input.value;
       });
     } else {
+      input.type = 'text';
       input.addEventListener('input', () => { answers[q.q_id] = input.value; });
     }
     wrap.appendChild(input);
   } else if (q.q_type === 'textarea') {
     const ta = document.createElement('textarea');
     ta.rows = 3;
-    ta.style.cssText = 'width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--border);font-family:inherit;font-size:15px;resize:vertical;';
+    ta.className = 'q-textarea';
     ta.value = answers[q.q_id] || '';
     ta.addEventListener('input', () => { answers[q.q_id] = ta.value; });
     wrap.appendChild(ta);
+  } else if (q.q_type === 'notice') {
+    const notice = document.createElement('div');
+    notice.className = 'q-notice';
+    notice.innerHTML = q.q_placeholder || ''; // 관리자가 작성한 안내문(굵게/글머리기호 등 간단한 HTML 허용)
+    wrap.appendChild(notice);
   } else if (q.q_type === 'dropdown') {
+    let options = q.options;
+    const parentId = GRADE_DROPDOWN_PARENT[q.q_id];
+    if (parentId) {
+      // 학교급이 "초등학교"면 1~6학년, 그 외(중/고등학교)는 1~3학년만 노출
+      options = answers[parentId] === '초등학교' ? q.options.slice(0, 6) : q.options.slice(0, 3);
+      if (answers[q.q_id] && options.indexOf(answers[q.q_id]) === -1) {
+        answers[q.q_id] = ''; // 학교급이 바뀌어 더 이상 유효하지 않은 선택은 초기화
+      }
+    }
     const sel = document.createElement('select');
-    sel.style.cssText = 'width:100%;padding:13px 16px;border-radius:14px;border:1.5px solid var(--border);font-family:inherit;font-size:15px;';
-    sel.innerHTML = '<option value="">선택</option>' + q.options.map(o => `<option value="${o}">${o}</option>`).join('');
+    sel.className = 'q-select';
+    sel.innerHTML = '<option value="">선택</option>' + options.map(o => `<option value="${o}">${o}</option>`).join('');
     sel.value = answers[q.q_id] || '';
     sel.addEventListener('change', () => { answers[q.q_id] = sel.value; refreshVisibleFields_(); });
     wrap.appendChild(sel);
@@ -729,6 +845,9 @@ function renderQuestion_(q) {
     const list = document.createElement('div');
     list.className = 'option-list';
     const current = answers[q.q_id] || (q.q_type === 'checkbox' ? [] : '');
+    const children = findChildrenFor_(q.q_id, siblingQuestions);
+    const renderedChildIds = new Set();
+
     q.options.forEach(opt => {
       const item = document.createElement('label');
       item.className = 'option-item';
@@ -747,6 +866,19 @@ function renderQuestion_(q) {
         refreshVisibleFields_();
       });
       list.appendChild(item);
+
+      // 이 옵션이 체크되어 있고, 이 옵션에 연결된 세부 입력 문항이 있다면
+      // 바로 이 체크박스 아래에 이어서 그린다 (한 문항이 여러 옵션에 연결돼 있어도 한 번만).
+      if (checked) {
+        children
+          .filter(child => showIfValues_(child.show_if).indexOf(opt) !== -1 && !renderedChildIds.has(child.q_id))
+          .forEach(child => {
+            renderedChildIds.add(child.q_id);
+            const childWrap = renderQuestion_(child, siblingQuestions);
+            childWrap.classList.add('nested-question');
+            list.appendChild(childWrap);
+          });
+      }
     });
     wrap.appendChild(list);
   }
@@ -763,46 +895,63 @@ function validateCurrentSection_() {
     if (!evalShowIf(q.show_if) || !q.required) continue;
     const v = answers[q.q_id];
     if (v === undefined || v === '' || (Array.isArray(v) && v.length === 0)) {
-      return `"${q.q_label}" 항목은 필수 입력입니다.`;
+      return { qId: q.q_id, message: `"${q.q_label}" 항목은 필수 입력입니다.` };
     }
   }
-  // 전화번호 형식 검증 (하이픈 포함 010-1234-5678 형태)
+  // 전화번호 형식 검증 (하이픈 포함 010-1234-5678 형태, 숫자 10~11자리)
   for (const q of section.questions) {
     if (q.q_format === 'phone' && answers[q.q_id]) {
-      if (!/^01[0-9]-\d{3,4}-\d{4}$/.test(answers[q.q_id])) {
-        return `"${q.q_label}" 항목은 010-1234-5678 형식으로 입력해 주세요.`;
+      const digitCount = answers[q.q_id].replace(/[^0-9]/g, '').length;
+      if (digitCount < 10 || digitCount > 11) {
+        return { qId: q.q_id, message: `"${q.q_label}" 항목의 번호 자릿수를 다시 확인해 주세요. (010-1234-5678 형태)` };
       }
     }
   }
   return null;
 }
 
-nextBtn.addEventListener('click', async () => {
-  const err = validateCurrentSection_();
-  if (err) { alert(err); return; }
-
-  // 방금 입력한 답변을 반영해 "표시해야 할 다음 섹션"을 다시 계산한다.
-  // (이전 코드는 이 섹션에 들어올 때 계산해둔 낡은 목록으로 판단해,
-  //  이 섹션에서 방금 준 답변으로 새로 나타나야 할 다음 섹션을 놓치는 버그가 있었음)
-  const visible = computeVisibleSections_();
-  const nextRealIndex = visible.find(idx => idx > currentSectionRealIndex);
-
-  if (nextRealIndex === undefined) {
-    nextBtn.disabled = true;
-    nextBtn.textContent = '제출 중…';
-    const flatAnswers = {};
-    Object.keys(answers).forEach(k => {
-      flatAnswers[k] = Array.isArray(answers[k]) ? answers[k].join(',') : answers[k];
-    });
-    const res = await apiPost('submitSurvey', Object.assign({}, student, { answers: flatAnswers }));
-    nextBtn.disabled = false;
-    if (!res.ok) { alert(res.message || '제출 중 오류가 발생했습니다.'); return; }
-    showCard('doneCard');
-    return;
+function highlightFieldError_(qId) {
+  questionListEl.querySelectorAll('.question.field-error').forEach(el => el.classList.remove('field-error'));
+  const target = questionListEl.querySelector(`.question[data-qid="${qId}"]`);
+  if (target) {
+    target.classList.add('field-error');
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+}
 
-  currentSectionRealIndex = nextRealIndex;
-  renderSection_();
+nextBtn.addEventListener('click', async () => {
+  try {
+    const err = validateCurrentSection_();
+    if (err) { highlightFieldError_(err.qId); alert(err.message); return; }
+
+    // 방금 입력한 답변을 반영해 "표시해야 할 다음 섹션"을 다시 계산한다.
+    // (이전 코드는 이 섹션에 들어올 때 계산해둔 낡은 목록으로 판단해,
+    //  이 섹션에서 방금 준 답변으로 새로 나타나야 할 다음 섹션을 놓치는 버그가 있었음)
+    const visible = computeVisibleSections_();
+    const nextRealIndex = visible.find(idx => idx > currentSectionRealIndex);
+
+    if (nextRealIndex === undefined) {
+      nextBtn.disabled = true;
+      nextBtn.textContent = '제출 중…';
+      const flatAnswers = {};
+      Object.keys(answers).forEach(k => {
+        flatAnswers[k] = Array.isArray(answers[k]) ? answers[k].join(',') : answers[k];
+      });
+      const res = await apiPost('submitSurvey', Object.assign({}, student, { answers: flatAnswers }));
+      nextBtn.disabled = false;
+      nextBtn.textContent = '제출하기';
+      if (!res.ok) { alert(res.message || '제출 중 오류가 발생했습니다.'); return; }
+      showCard('doneCard');
+      return;
+    }
+
+    currentSectionRealIndex = nextRealIndex;
+    renderSection_();
+  } catch (e) {
+    nextBtn.disabled = false;
+    alert('예기치 못한 오류가 발생했습니다: ' + e.message);
+    console.error(e);
+  }
 });
 
 prevBtn.addEventListener('click', () => {
