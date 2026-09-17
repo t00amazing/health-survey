@@ -432,11 +432,14 @@ const DEMO = {
     is_open: 'TRUE'
   },
   questions: [
-    {section_no:2, section_title:'연락처 수집', section_desc:'해당 연락처는 응급상황 시에만 사용되며 1년 보유 후 완전 폐기합니다.', q_id:'q1', q_type:'text', q_label:'학생 본인의 연락처를 정확하게 적어주세요.', q_placeholder:'예: 010-1234-1234', required:true, options:[], show_if:''},
+    {section_no:2, section_title:'연락처 수집', section_desc:'해당 연락처는 응급상황 시에만 사용되며 1년 보유 후 완전 폐기합니다.', q_id:'q1', q_type:'text', q_label:'학생 본인의 연락처를 정확하게 적어주세요.', q_placeholder:'010-1234-1234', required:true, options:[], show_if:'', q_format:'phone'},
     {section_no:2, section_title:'', section_desc:'', q_id:'q2', q_type:'dropdown', q_label:'연락 가능한 보호자와의 관계', q_placeholder:'', required:true, options:['부','모','조부모','기타'], show_if:''},
-    {section_no:2, section_title:'', section_desc:'', q_id:'q3', q_type:'text', q_label:'보호자의 연락처를 정확하게 적어주세요.', q_placeholder:'예: 010-1234-1234', required:true, options:[], show_if:''},
+    {section_no:2, section_title:'', section_desc:'', q_id:'q3', q_type:'text', q_label:'보호자의 연락처를 정확하게 적어주세요.', q_placeholder:'010-1234-1234', required:true, options:[], show_if:'', q_format:'phone'},
     {section_no:3, section_title:'현재 가지고 있는 질병에 관한 조사', section_desc:'', q_id:'q10', q_type:'radio', q_label:'현재 병원에서 진단 받아 치료 중이거나 관리 중인 질병이 있으신가요?', q_placeholder:'', required:true, options:['예','아니오'], show_if:''},
-    {section_no:4, section_title:'현재 가지고 있는 질병에 대해 자세하게 적어주세요.', section_desc:'', q_id:'q11', q_type:'checkbox', q_label:'질환명(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['제1형 당뇨','제2형 당뇨','성조숙증','정신적 질환','시력장애','청력장애','언어장애','희귀난치성질환','기타'], show_if:'q10=예'},
+    {section_no:4, section_title:'현재 가지고 있는 질병에 대해 자세하게 적어주세요.', section_desc:'', q_id:'q11', q_type:'checkbox', q_label:'질환명(해당 항목 모두 선택)', q_placeholder:'', required:true, options:['제1형 당뇨','제2형 당뇨','성조숙증','우울증 등의 정서적 질환','시력장애','청력장애','언어장애','지체장애','희귀난치성질환','기타'], show_if:'q10=예'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_emotion_detail', q_type:'text', q_label:'정서적 질환 세부 진단명', q_placeholder:'예: 우울증, 불안장애 등', required:false, options:[], show_if:'q11=우울증 등의 정서적 질환'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_rare_detail', q_type:'text', q_label:'희귀난치성질환 세부 진단명', q_placeholder:'', required:false, options:[], show_if:'q11=희귀난치성질환'},
+    {section_no:4, section_title:'', section_desc:'', q_id:'q11_disability_grade', q_type:'text', q_label:'장애등급', q_placeholder:'예: 3급 또는 심한 장애', required:false, options:[], show_if:'q11=지체장애'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q11_etc', q_type:'text', q_label:'기타 질환명', q_placeholder:'', required:false, options:[], show_if:'q11=기타'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q12', q_type:'radio', q_label:'치료 상태', q_placeholder:'', required:true, options:['치료 중','치료 종료'], show_if:'q10=예'},
     {section_no:4, section_title:'', section_desc:'', q_id:'q13', q_type:'number', q_label:'발병 연도(서기)', q_placeholder:'예: 2023', required:true, options:[], show_if:'q10=예'},
@@ -471,8 +474,7 @@ const DEMO = {
 /* 상태 */
 let QUESTIONS = [];
 let SECTION_LIST = [];
-let visibleSectionIndices = [];
-let currentPointer = 0;
+let currentSectionRealIndex = 0; // SECTION_LIST 안에서의 실제 인덱스 (표시 여부와 무관한 절대 위치)
 let answers = {};
 let student = { grade: '', class: '', number: '', name: '' };
 
@@ -571,6 +573,14 @@ function buildSectionList_() {
   SECTION_LIST = Object.values(map).sort((a, b) => a.section_no - b.section_no);
 }
 
+/* 전화번호 입력 시 하이픈 자동 삽입 (010-1234-5678 형태로 고정) */
+function formatPhone_(raw) {
+  const digits = raw.replace(/[^0-9]/g, '').slice(0, 11);
+  if (digits.length < 4) return digits;
+  if (digits.length < 8) return digits.slice(0, 3) + '-' + digits.slice(3);
+  return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+}
+
 /* show_if 평가 */
 function evalShowIf(showIf) {
   if (!showIf) return true;
@@ -639,8 +649,7 @@ startSurveyBtn.addEventListener('click', async () => {
   if (!res.ok) { authError.textContent = res.message || '확인 중 오류가 발생했습니다.'; return; }
 
   answers = {};
-  visibleSectionIndices = computeVisibleSections_();
-  currentPointer = 0;
+  currentSectionRealIndex = computeVisibleSections_()[0];
   showCard('surveyCard');
   renderSection_();
 });
@@ -658,11 +667,12 @@ const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 
 function renderSection_() {
-  const secIdx = visibleSectionIndices[currentPointer];
-  const section = SECTION_LIST[secIdx];
+  const section = SECTION_LIST[currentSectionRealIndex];
+  const visible = computeVisibleSections_();
+  const posInVisible = visible.indexOf(currentSectionRealIndex);
 
   document.getElementById('surveyProgress').textContent =
-    `${currentPointer + 1} / ${visibleSectionIndices.length} 섹션`;
+    `${posInVisible + 1} / ${visible.length} 섹션`;
   document.getElementById('sectionTitle').textContent = section.title;
   document.getElementById('sectionDesc').textContent = section.desc;
 
@@ -672,8 +682,8 @@ function renderSection_() {
     questionListEl.appendChild(renderQuestion_(q));
   });
 
-  prevBtn.style.visibility = currentPointer === 0 ? 'hidden' : 'visible';
-  nextBtn.textContent = currentPointer === visibleSectionIndices.length - 1 ? '제출하기' : '다음 →';
+  prevBtn.style.visibility = posInVisible === 0 ? 'hidden' : 'visible';
+  nextBtn.textContent = posInVisible === visible.length - 1 ? '제출하기' : '다음 →';
 }
 
 function renderQuestion_(q) {
@@ -689,7 +699,17 @@ function renderQuestion_(q) {
     input.type = q.q_type;
     input.placeholder = q.q_placeholder || '';
     input.value = answers[q.q_id] || '';
-    input.addEventListener('input', () => { answers[q.q_id] = input.value; });
+    if (q.q_format === 'phone') {
+      input.type = 'tel';
+      input.inputMode = 'numeric';
+      input.maxLength = 13; // 010-1234-5678
+      input.addEventListener('input', () => {
+        input.value = formatPhone_(input.value);
+        answers[q.q_id] = input.value;
+      });
+    } else {
+      input.addEventListener('input', () => { answers[q.q_id] = input.value; });
+    }
     wrap.appendChild(input);
   } else if (q.q_type === 'textarea') {
     const ta = document.createElement('textarea');
@@ -738,13 +758,20 @@ function refreshVisibleFields_() {
 }
 
 function validateCurrentSection_() {
-  const secIdx = visibleSectionIndices[currentPointer];
-  const section = SECTION_LIST[secIdx];
+  const section = SECTION_LIST[currentSectionRealIndex];
   for (const q of section.questions) {
     if (!evalShowIf(q.show_if) || !q.required) continue;
     const v = answers[q.q_id];
     if (v === undefined || v === '' || (Array.isArray(v) && v.length === 0)) {
       return `"${q.q_label}" 항목은 필수 입력입니다.`;
+    }
+  }
+  // 전화번호 형식 검증 (하이픈 포함 010-1234-5678 형태)
+  for (const q of section.questions) {
+    if (q.q_format === 'phone' && answers[q.q_id]) {
+      if (!/^01[0-9]-\d{3,4}-\d{4}$/.test(answers[q.q_id])) {
+        return `"${q.q_label}" 항목은 010-1234-5678 형식으로 입력해 주세요.`;
+      }
     }
   }
   return null;
@@ -754,7 +781,13 @@ nextBtn.addEventListener('click', async () => {
   const err = validateCurrentSection_();
   if (err) { alert(err); return; }
 
-  if (currentPointer === visibleSectionIndices.length - 1) {
+  // 방금 입력한 답변을 반영해 "표시해야 할 다음 섹션"을 다시 계산한다.
+  // (이전 코드는 이 섹션에 들어올 때 계산해둔 낡은 목록으로 판단해,
+  //  이 섹션에서 방금 준 답변으로 새로 나타나야 할 다음 섹션을 놓치는 버그가 있었음)
+  const visible = computeVisibleSections_();
+  const nextRealIndex = visible.find(idx => idx > currentSectionRealIndex);
+
+  if (nextRealIndex === undefined) {
     nextBtn.disabled = true;
     nextBtn.textContent = '제출 중…';
     const flatAnswers = {};
@@ -768,15 +801,17 @@ nextBtn.addEventListener('click', async () => {
     return;
   }
 
-  currentPointer++;
-  const recomputed = computeVisibleSections_();
-  currentPointer = Math.min(currentPointer, recomputed.length - 1);
-  visibleSectionIndices = recomputed;
+  currentSectionRealIndex = nextRealIndex;
   renderSection_();
 });
 
 prevBtn.addEventListener('click', () => {
-  if (currentPointer > 0) { currentPointer--; renderSection_(); }
+  const visible = computeVisibleSections_();
+  const priorIndices = visible.filter(idx => idx < currentSectionRealIndex);
+  if (priorIndices.length > 0) {
+    currentSectionRealIndex = priorIndices[priorIndices.length - 1];
+    renderSection_();
+  }
 });
 
 document.getElementById('surveyBackLink').addEventListener('click', () => {
