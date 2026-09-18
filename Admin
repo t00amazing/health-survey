@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>건강조사 관리자</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #F8F1DC;
+    --card: #FFFFFF;
+    --ink: #1E2A3A;
+    --ink-soft: #6B6456;
+    --ink-faint: #9C9484;
+    --accent: #E3A63C;
+    --pill-blue-bg: #C7E3ED;
+    --pill-blue-ink: #1C4E63;
+    --khaki: #D9C9A0;
+    --khaki-ink: #3B3324;
+    --khaki-disabled: #ECE4CF;
+    --khaki-disabled-ink: #B4A98C;
+    --border: #ECE3C8;
+    --border-strong: #17140F;
+    --danger: #B5473E;
+    --good: #2F7A4D;
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-pill: 999px;
+    --shadow: 0 6px 24px rgba(30, 42, 58, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 720px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  .topbar {
+    background: var(--card);
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow);
+    padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .topbar-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+
+  .pill { border: 2px solid var(--border-strong); border-radius: var(--radius-pill); font-family: inherit; font-weight: 600; cursor: pointer; }
+  .pill:active { transform: scale(0.97); }
+  .pill-blue { background: var(--pill-blue-bg); color: var(--pill-blue-ink); padding: 8px 16px; font-size: 13px; }
+  .pill-khaki { padding: 13px 18px; font-size: 14px; background: var(--khaki); color: var(--khaki-ink); white-space: nowrap; }
+  .pill-khaki:disabled { background: var(--khaki-disabled); color: var(--khaki-disabled-ink); cursor: not-allowed; }
+  .pill-outline { padding: 13px 18px; font-size: 14px; background: #fff; color: var(--ink-soft); }
+
+  .hero { margin: 28px 4px 20px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0 0 6px; }
+  .subtitle { font-size: 14px; color: var(--ink-soft); margin: 0; }
+
+  .card { background: var(--card); border: 2px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 24px; margin-bottom: 18px; }
+  .hidden { display: none !important; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
+  .field input, .field select {
+    width: 100%; padding: 12px 14px; border-radius: var(--radius-md);
+    border: 2px solid var(--border-strong); background: #FDFBF4; font-family: inherit; font-size: 15px; color: var(--ink);
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+
+  .row { display: flex; gap: 10px; }
+  .row > .field { flex: 1; }
+
+  .error { color: var(--danger); font-size: 13px; margin: 10px 0 0; }
+  .error:empty { display: none; }
+  .notice-box { background: #FDF6E8; border: 2px solid var(--border-strong); border-radius: var(--radius-md); padding: 12px 14px; font-size: 13px; line-height: 1.6; color: var(--ink-soft); margin-bottom: 16px; }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 16px; font-size: 13.5px; border: 2px solid var(--border-strong); border-radius: var(--radius-pill); background: #fff; color: var(--ink-soft); cursor: pointer; font-family: inherit; font-weight: 600; }
+  .tab-btn.active { background: var(--khaki); color: var(--khaki-ink); }
+
+  table { width: auto; min-width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap; }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 12px; }
+  .table-wrap { overflow-x: auto; border: 2px solid var(--border-strong); border-radius: var(--radius-md); margin-top: 14px; }
+  .table-wrap table { min-width: 480px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11.5px; font-weight: 700; }
+  .badge-dup { background: #FDF0C7; color: #7A5B0A; }
+  .badge-ok { background: #E1F1E6; color: var(--good); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 10px 6px 14px; border: 2px solid var(--border-strong); border-radius: var(--radius-pill);
+    background: #FDF6E8; font-size: 13px; font-weight: 600;
+  }
+  .chip button {
+    border: none; background: none; cursor: pointer; font-size: 15px; line-height: 1;
+    color: var(--ink-soft); padding: 2px 4px;
+  }
+  .group-heading { font-weight: 700; font-size: 14px; margin: 18px 0 6px; }
+  .group-heading:first-child { margin-top: 0; }
+
+  .empty-note { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 24px 0; }
+
+  .detail-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .detail-item { border: 2px solid var(--border-strong); border-radius: var(--radius-md); padding: 10px 14px; }
+  .detail-item .q { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 4px; }
+  .detail-item .a { font-size: 14px; }
+  .link-btn { background: none; border: none; color: var(--pill-blue-ink); text-decoration: underline; cursor: pointer; font-size: 13px; font-family: inherit; padding: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="topbar-title"><span class="dot"></span> 건강조사 관리자</div>
+    <button class="pill pill-blue" id="logoutBtn" style="display:none;">로그아웃</button>
+  </div>
+
+  <div class="hero">
+    <h1 id="pageTitle">관리자 로그인</h1>
+    <p class="subtitle" id="pageSubtitle">비밀번호를 입력해 주세요.</p>
+  </div>
+
+  <!-- 로그인 -->
+  <div class="card" id="loginCard">
+    <div class="field">
+      <label>관리자 비밀번호</label>
+      <input type="password" id="passwordInput" placeholder="비밀번호 입력">
+    </div>
+    <button class="pill pill-khaki" id="loginBtn" style="width:100%;">로그인 →</button>
+    <p class="error" id="loginError"></p>
+  </div>
+
+  <!-- 관리자 화면 -->
+  <div id="adminArea" class="hidden">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="roster">전교생 명부</button>
+      <button class="tab-btn" data-tab="responses">응답 조회</button>
+      <button class="tab-btn" data-tab="unsubmitted">미제출자 조회</button>
+      <button class="tab-btn" data-tab="stats">통계</button>
+    </div>
+
+    <!-- 탭 1: 명부 관리 -->
+    <div class="card" id="tab-roster">
+      <div class="notice-box">
+        엑셀(.xlsx) 또는 CSV 파일을 업로드하면 <strong>전교생 명단 전체가 업로드한 내용으로 교체</strong>됩니다.<br>
+        파일 첫 줄에 <strong>학년, 반, 번호, 이름</strong> 컬럼이 있어야 합니다 (순서는 상관없음).
+      </div>
+      <div class="field">
+        <label>명부 파일 선택</label>
+        <input type="file" id="rosterFile" accept=".xlsx,.xls,.csv">
+      </div>
+      <div id="rosterPreviewWrap" class="hidden">
+        <p class="subtitle">미리보기 (<span id="rosterCount">0</span>명) — 아래 내용으로 전체 교체됩니다.</p>
+        <div class="table-wrap"><table id="rosterPreviewTable"></table></div>
+        <button class="pill pill-khaki" id="rosterUploadBtn" style="width:100%; margin-top:14px;">이 내용으로 명부 업로드 →</button>
+      </div>
+      <p class="error" id="rosterError"></p>
+    </div>
+
+    <!-- 탭 2: 응답 조회 -->
+    <div class="card hidden" id="tab-responses">
+      <div class="notice-box">
+        학년/반을 <strong>비우면 "전체"</strong>로 조회됩니다 (예: 둘 다 비우면 전교생 전체 조회).
+      </div>
+      <div class="row">
+        <div class="field"><label>학년</label><input type="number" id="respGrade" placeholder="비우면 전체"></div>
+        <div class="field"><label>반</label><input type="number" id="respClass" placeholder="비우면 전체"></div>
+        <div class="field"><label>번호(선택)</label><input type="number" id="respNumber" placeholder="비우면 전체"></div>
+      </div>
+      <button class="pill pill-khaki" id="respFetchBtn" style="width:100%;">조회하기 →</button>
+      <p class="error" id="respError"></p>
+
+      <div id="respFilters" class="hidden">
+        <div class="notice-box" style="margin-top:18px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:var(--danger);">
+            <input type="checkbox" id="filterAbnormalOnly" style="width:17px;height:17px;accent-color:var(--danger);">
+            🔴 유소견 후보만 보기 (질병·알레르기·미세먼지 민감군 중 하나라도 "예"인 학생)
+          </label>
+        </div>
+
+        <div class="notice-box">
+          <p class="subtitle" style="margin:0 0 10px; font-weight:600; color:var(--ink);">질환별 필터 (하나 이상 선택 시 해당하는 학생만 표시)</p>
+          <div id="categoryFilterList" style="display:flex; flex-wrap:wrap; gap:8px 14px;"></div>
+        </div>
+
+        <button class="pill pill-outline" id="columnToggleBtn" style="width:100%; text-align:left; padding:12px 16px;">▸ 표에 표시할 항목 선택</button>
+        <div class="notice-box hidden" id="columnPanel" style="margin-top:4px;">
+          <div id="columnCheckboxes" style="display:flex; flex-wrap:wrap; gap:8px 16px;"></div>
+          <div class="row" style="margin-top:12px;">
+            <button class="pill pill-outline" id="colSelectAllBtn" style="flex:1; padding:9px;">전체선택</button>
+            <button class="pill pill-outline" id="colSelectNoneBtn" style="flex:1; padding:9px;">전체해제</button>
+            <button class="pill pill-outline" id="colSelectDefaultBtn" style="flex:1; padding:9px;">기본값 조회</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="respResult"></div>
+    </div>
+
+    <!-- 탭 3: 미제출자 조회 -->
+    <div class="card hidden" id="tab-unsubmitted">
+      <div class="notice-box">
+        학년/반을 <strong>비우면 "전체"</strong>로 조회됩니다 (예: 학년만 입력하고 반을 비우면 그 학년 전체 반, 둘 다 비우면 학교 전체).<br>
+        여러 학년·반을 한 번에 보고 싶으면 "대상 추가"로 조합을 여러 개 담은 뒤 조회하세요.
+      </div>
+      <div class="row">
+        <div class="field"><label>학년</label><input type="number" id="unsubGrade" placeholder="비우면 전체"></div>
+        <div class="field"><label>반</label><input type="number" id="unsubClass" placeholder="비우면 전체"></div>
+      </div>
+      <div class="field">
+        <label>조회 대상 유형</label>
+        <select id="unsubFormType">
+          <option value="survey">학생 건강조사</option>
+          <option value="emergency_care">응급처치 동의서 (추후 지원)</option>
+          <option value="health_log_use">온라인보건일지 동의서 (추후 지원)</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="pill pill-outline" id="unsubAddChipBtn" style="flex:1;">+ 대상 추가</button>
+        <button class="pill pill-khaki" id="unsubFetchBtn" style="flex:1;">조회하기 →</button>
+      </div>
+      <div id="unsubChipList" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;"></div>
+      <p class="error" id="unsubError"></p>
+      <div id="unsubResult"></div>
+    </div>
+
+    <!-- 탭 4: 통계 -->
+    <div class="card hidden" id="tab-stats">
+      <div class="notice-box">
+        학년/반을 <strong>비우면 "전체"</strong> 기준으로 집계합니다.
+      </div>
+      <div class="row">
+        <div class="field"><label>학년</label><input type="number" id="statsGrade" placeholder="비우면 전체"></div>
+        <div class="field"><label>반</label><input type="number" id="statsClass" placeholder="비우면 전체"></div>
+      </div>
+      <button class="pill pill-khaki" id="statsFetchBtn" style="width:100%;">통계 조회하기 →</button>
+      <p class="error" id="statsError"></p>
+      <div id="statsResult"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================
+   설정 — 배포한 Apps Script 웹 앱 URL을 넣어주세요.
+   비워두면 데모 모드로 동작합니다 (비밀번호: 119, 박보건/김보건/이보건 예시 데이터).
+   ========================================================== */
+const CONFIG = { API_BASE_URL: 'https://script.google.com/macros/s/AKfycbxu1Rt9GVQzIsYaB6evwX3oj-99stHvm7eBa0I332E7kI0E_jgG7LYjtGopVqgTlKk/exec' };
+const DEMO_MODE = !CONFIG.API_BASE_URL;
+
+let adminPassword = '';
+let QUESTION_LABELS = {}; // q_id -> q_label (응답 상세 표시용)
+
+/* ── 데모 데이터 ─────────────────────────────────────── */
+const DEMO = {
+  password: '119',
+  roster: [
+    { grade: '1', class: '1', number: '1', name: '박보건' },
+    { grade: '1', class: '1', number: '2', name: '김보건' },
+    { grade: '1', class: '1', number: '3', name: '이보건' },
+    { grade: '1', class: '1', number: '4', name: '윤보건' },
+    { grade: '1', class: '2', number: '1', name: '최보건' },
+    { grade: '2', class: '1', number: '1', name: '정보건' }
+  ],
+  questions: [
+    { q_id: 'q1', q_label: '학생 본인의 연락처' }, { q_id: 'q2', q_label: '보호자와의 관계' }, { q_id: 'q3', q_label: '보호자의 연락처' },
+    { q_id: 'q10', q_label: '현재 병원에서 진단 받아 치료 중이거나 관리 중인 질병이 있으신가요?' },
+    { q_id: 'q11', q_label: '질환명' },
+    { q_id: 'q11_emotion_detail', q_label: '정서적 질환 세부 진단명' },
+    { q_id: 'q11_rare_detail', q_label: '희귀난치성질환 세부 진단명' },
+    { q_id: 'q11_disability_grade', q_label: '장애등급' },
+    { q_id: 'q11_atopy_area', q_label: '아토피 병변 부위' },
+    { q_id: 'q11_atopy_severity', q_label: '아토피 증상의 중증도' },
+    { q_id: 'q11_etc', q_label: '기타 질환명' },
+    { q_id: 'q12', q_label: '치료 상태' }, { q_id: 'q13', q_label: '발병 연도(서기)' },
+    { q_id: 'q14', q_label: '치료 중인 병원명/복용 약물/치료 내용' }, { q_id: 'q15', q_label: '현재 상태 및 학교생활 시 주의사항' },
+    { q_id: 'q20', q_label: '가지고 있는 알레르기 질환이 있나요?' },
+    { q_id: 'q21', q_label: '알레르기 유형' },
+    { q_id: 'q21_food_detail', q_label: '알레르기 - 식품명' },
+    { q_id: 'q21_drug_detail', q_label: '알레르기 - 약품명' },
+    { q_id: 'q21_animal_detail', q_label: '알레르기 - 동물명' },
+    { q_id: 'q21_etc', q_label: '기타 알레르기 유형' },
+    { q_id: 'q22', q_label: '알레르기 세부 증상' },
+    { q_id: 'q23', q_label: '미세먼지 민감군에 해당되십니까?' },
+    { q_id: 'q23_confirm', q_label: '미세먼지 안내 사항 확인 여부' },
+    { q_id: 'q30', q_label: '담배를 피워본 적이 있나요?' }, { q_id: 'q31', q_label: '흡연 시작 학교급' }, { q_id: 'q32', q_label: '흡연 시작 학년' },
+    { q_id: 'q33', q_label: '하루 흡연량(개비)' }, { q_id: 'q34', q_label: '흡연 이유' }, { q_id: 'q34_etc', q_label: '기타 흡연 이유' },
+    { q_id: 'q40', q_label: '술을 마신 적이 있나요?' }, { q_id: 'q41', q_label: '음주 시작 학교급' }, { q_id: 'q42', q_label: '음주 시작 학년' },
+    { q_id: 'q43', q_label: '음주 빈도' }, { q_id: 'q44', q_label: '음주 이유' }, { q_id: 'q44_etc', q_label: '기타 음주 이유' }
+  ],
+  responses: [
+    { timestamp: '2026-03-05 09:12', submission_id: 'S-0001', is_latest: true, grade: '1', class: '1', number: '1', name: '박보건',
+      q1: '010-1111-2222', q2: '모', q3: '010-3333-4444',
+      q10: '예', q11: '제1형 당뇨', q12: '치료 중', q13: '2022', q14: '전주병원 / 인슐린 / 정기 검진', q15: '저혈당 대비 사탕 비치',
+      q20: '아니오', q23: '아니오', q30: '아니오', q40: '아니오' },
+    { timestamp: '2026-03-05 09:20', submission_id: 'S-0002', is_latest: true, grade: '1', class: '1', number: '2', name: '김보건',
+      q1: '010-2222-3333', q2: '부', q3: '010-4444-5555',
+      q10: '아니오',
+      q20: '예', q21: '식품', q21_food_detail: '새우', q22: '새우 섭취 시 두드러기, 입술 부종', q23: '예', q23_confirm: '위 안내 사항을 확인했습니다',
+      q30: '아니오', q40: '아니오' },
+    { timestamp: '2026-03-06 08:40', submission_id: 'S-0003', is_latest: true, grade: '2', class: '1', number: '1', name: '정보건',
+      q10: '아니오', q20: '아니오', q23: '아니오', q30: '아니오', q40: '아니오' },
+    { timestamp: '2026-03-06 09:05', submission_id: 'S-0004', is_latest: true, grade: '1', class: '1', number: '4', name: '윤보건',
+      q1: '010-5555-6666', q2: '모', q3: '010-7777-8888',
+      q10: '아니오', q20: '아니오', q23: '아니오',
+      q30: '예', q31: '중학교', q32: '2학년', q33: '5', q34: '스트레스 해소', q40: '아니오' }
+    // 1반 3번 이보건, 1학년 2반 최보건은 미제출 상태로 데모에 남겨둠 (미제출자 조회 확인용)
+  ],
+  statQuestions: [
+    { q_id: 'q10', q_label: '질병 유무', q_type: 'radio' },
+    { q_id: 'q11', q_label: '질환명', q_type: 'checkbox' },
+    { q_id: 'q20', q_label: '알레르기 유무', q_type: 'radio' },
+    { q_id: 'q21', q_label: '알레르기 유형', q_type: 'checkbox' },
+    { q_id: 'q23', q_label: '미세먼지 민감군', q_type: 'radio' },
+    { q_id: 'q30', q_label: '흡연 경험', q_type: 'radio' },
+    { q_id: 'q40', q_label: '음주 경험', q_type: 'radio' }
+  ]
+};
+
+/* ── API 호출 헬퍼 ───────────────────────────────────── */
+async function apiPost(action, payload) {
+  if (DEMO_MODE) return demoPost_(action, payload);
+  const res = await fetch(CONFIG.API_BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  return res.json();
+}
+async function apiGet(action, params) {
+  if (DEMO_MODE) return demoGet_(action, params);
+  const qs = new URLSearchParams(Object.assign({ action }, params || {})).toString();
+  const res = await fetch(`${CONFIG.API_BASE_URL}?${qs}`);
+  return res.json();
+}
+
+function demoPost_(action, body) {
+  if (action === 'adminLogin') {
+    return body.password === DEMO.password ? { ok: true } : { ok: false, message: '(데모) 비밀번호는 119입니다.' };
+  }
+  if (action === 'uploadRoster') {
+    console.log('[데모] 업로드된 명부:', body.rows);
+    DEMO.roster = body.rows;
+    return { ok: true, count: body.rows.length };
+  }
+  if (action === 'getResponses') {
+    let rows = DEMO.responses;
+    if (body.grade) rows = rows.filter(r => String(r.grade) === String(body.grade));
+    if (body.class) rows = rows.filter(r => String(r.class) === String(body.class));
+    if (body.number) rows = rows.filter(r => String(r.number) === String(body.number));
+    const students = rows.map(r => ({ number: r.number, name: r.name, submissionCount: 1, latest: r, history: [r] }))
+      .sort((a, b) => (Number(a.latest.grade) - Number(b.latest.grade)) || (Number(a.latest.class) - Number(b.latest.class)) || (Number(a.number) - Number(b.number)));
+    return { ok: true, students };
+  }
+  if (action === 'getStats') {
+    let roster = DEMO.roster;
+    if (body.grade) roster = roster.filter(r => String(r.grade) === String(body.grade));
+    if (body.class) roster = roster.filter(r => String(r.class) === String(body.class));
+    let responses = DEMO.responses;
+    if (body.grade) responses = responses.filter(r => String(r.grade) === String(body.grade));
+    if (body.class) responses = responses.filter(r => String(r.class) === String(body.class));
+
+    const abnormalCount = responses.filter(r => r.q10 === '예' || r.q20 === '예' || r.q23 === '예').length;
+    const stats = DEMO.statQuestions.map(q => {
+      const counts = {};
+      let answered = 0;
+      responses.forEach(r => {
+        const val = r[q.q_id];
+        if (!val) return;
+        answered++;
+        String(val).split(',').map(s => s.trim()).filter(Boolean).forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+      });
+      return { q_id: q.q_id, label: q.q_label, q_type: q.q_type, answered, counts };
+    });
+    return { ok: true, totalRoster: roster.length, totalSubmitted: responses.length, abnormalCount, stats };
+  }
+  return { ok: false, message: '알 수 없는 요청입니다.' };
+}
+function demoGet_(action, params) {
+  if (action === 'unsubmitted') {
+    const grade = params.grade || '';
+    const classNo = params.class || '';
+    const formType = params.formType || 'survey';
+
+    let roster = DEMO.roster;
+    if (grade) roster = roster.filter(r => String(r.grade) === String(grade));
+    if (classNo) roster = roster.filter(r => String(r.class) === String(classNo));
+
+    const submittedKeys = (formType === 'survey')
+      ? DEMO.responses.map(r => `${r.grade}-${r.class}-${r.number}`)
+      : []; // 데모에서는 동의서 제출 이력이 없음
+
+    const unsubmittedList = roster.filter(r => submittedKeys.indexOf(`${r.grade}-${r.class}-${r.number}`) === -1);
+
+    if (grade && classNo) {
+      return { ok: true, unsubmitted: unsubmittedList.map(r => ({ number: r.number, name: r.name })) };
+    }
+    const groups = {};
+    unsubmittedList.forEach(r => {
+      const key = `${r.grade}-${r.class}`;
+      if (!groups[key]) groups[key] = { grade: r.grade, class: r.class, unsubmitted: [] };
+      groups[key].unsubmitted.push({ number: r.number, name: r.name });
+    });
+    const groupList = Object.values(groups).sort((a, b) => (Number(a.grade) - Number(b.grade)) || (Number(a.class) - Number(b.class)));
+    return { ok: true, groups: groupList };
+  }
+  return { ok: false, message: '알 수 없는 요청입니다.' };
+}
+
+/* ── 화면 전환 ───────────────────────────────────────── */
+function showAdminArea() {
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('adminArea').classList.remove('hidden');
+  document.getElementById('logoutBtn').style.display = 'inline-block';
+  document.getElementById('pageTitle').textContent = '건강조사 관리자 페이지';
+  document.getElementById('pageSubtitle').textContent = '전교생 명부, 응답, 미제출자를 관리합니다.';
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const pwEl = document.getElementById('passwordInput');
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  const res = await apiPost('adminLogin', { password: pwEl.value });
+  if (!res.ok) { errEl.textContent = res.message || '로그인에 실패했습니다.'; return; }
+  adminPassword = pwEl.value;
+  showAdminArea();
+  // 응답 상세 표시용 문항 라벨 캐시 (데모에서는 DEMO.questions 사용)
+  if (DEMO_MODE) {
+    DEMO.questions.forEach(q => { QUESTION_LABELS[q.q_id] = q.q_label; });
+  } else {
+    try {
+      const init = await apiGet('init', {});
+      if (init.ok) init.questions.forEach(q => { QUESTION_LABELS[q.q_id] = q.q_label; });
+    } catch (e) { /* 라벨 못 가져와도 조회 자체는 동작하도록 무시 */ }
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => location.reload());
+
+/* ── 탭 전환 ─────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['roster', 'responses', 'unsubmitted', 'stats'].forEach(name => {
+      document.getElementById('tab-' + name).classList.toggle('hidden', name !== btn.dataset.tab);
+    });
+  });
+});
+
+/* ── 탭1: 전교생 명부 업로드 ──────────────────────────── */
+let parsedRoster = [];
+
+function findCol_(headerRow, candidates) {
+  for (let i = 0; i < headerRow.length; i++) {
+    const cell = String(headerRow[i] || '').trim();
+    if (candidates.indexOf(cell) !== -1) return i;
+  }
+  return -1;
+}
+
+document.getElementById('rosterFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  const errEl = document.getElementById('rosterError');
+  errEl.textContent = '';
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (rows.length < 2) { errEl.textContent = '데이터가 없습니다.'; return; }
+
+      const header = rows[0];
+      const gradeCol = findCol_(header, ['학년']);
+      const classCol = findCol_(header, ['반']);
+      const numberCol = findCol_(header, ['번호', '출석번호']);
+      const nameCol = findCol_(header, ['이름', '성명']);
+      if ([gradeCol, classCol, numberCol, nameCol].indexOf(-1) !== -1) {
+        errEl.textContent = '"학년", "반", "번호", "이름" 컬럼을 모두 찾지 못했습니다. 첫 줄(헤더)을 확인해 주세요.';
+        return;
+      }
+
+      parsedRoster = rows.slice(1)
+        .filter(r => r[nameCol])
+        .map(r => ({ grade: String(r[gradeCol]).trim(), class: String(r[classCol]).trim(), number: String(r[numberCol]).trim(), name: String(r[nameCol]).trim() }));
+
+      document.getElementById('rosterCount').textContent = parsedRoster.length;
+      const previewRows = parsedRoster.slice(0, 20);
+      document.getElementById('rosterPreviewTable').innerHTML =
+        '<thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th></tr></thead><tbody>' +
+        previewRows.map(r => `<tr><td>${r.grade}</td><td>${r.class}</td><td>${r.number}</td><td>${r.name}</td></tr>`).join('') +
+        (parsedRoster.length > 20 ? `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">...외 ${parsedRoster.length - 20}명</td></tr>` : '') +
+        '</tbody>';
+      document.getElementById('rosterPreviewWrap').classList.remove('hidden');
+    } catch (err) {
+      errEl.textContent = '파일을 읽는 중 오류가 발생했습니다: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('rosterUploadBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('rosterUploadBtn');
+  const errEl = document.getElementById('rosterError');
+  errEl.textContent = '';
+  if (!confirm(`전교생 명부를 총 ${parsedRoster.length}명으로 완전히 교체합니다. 계속할까요?`)) return;
+  btn.disabled = true; btn.textContent = '업로드 중…';
+  const res = await apiPost('uploadRoster', { password: adminPassword, rows: parsedRoster });
+  btn.disabled = false; btn.textContent = '이 내용으로 명부 업로드 →';
+  if (!res.ok) { errEl.textContent = res.message || '업로드 중 오류가 발생했습니다.'; return; }
+  alert(`${res.count}명의 명부가 업로드되었습니다.`);
+});
+
+/* ── 탭2: 응답 조회 ──────────────────────────────────── */
+let lastFetchedStudents = [];
+
+// 표에 올릴 수 있는 전체 항목 정의 (구글시트 SurveyResponses 헤더 기준 + 보기 편한 조합 항목 2개)
+const COLUMN_DEFS = [
+  { key: 'grade', label: '학년' }, { key: 'class', label: '반' }, { key: 'number', label: '번호' }, { key: 'name', label: '이름' },
+  { key: 'q1', label: '학생 연락처' }, { key: 'q2', label: '보호자 관계' }, { key: 'q3', label: '보호자 연락처' },
+  { key: 'q10', label: '질병 유무' }, { key: 'disease_detail', label: '질환명(세부내용 포함)' },
+  { key: 'q12', label: '치료상태' }, { key: 'q13', label: '발병연도' },
+  { key: 'q14', label: '병원/약물/치료내용' }, { key: 'q15', label: '주의사항' },
+  { key: 'q20', label: '알레르기 유무' }, { key: 'allergy_detail', label: '알레르기 세부명' },
+  { key: 'q22', label: '알레르기 세부증상' },
+  { key: 'q23', label: '미세먼지 민감군' }, { key: 'q23_confirm', label: '미세먼지 안내 확인여부' },
+  { key: 'q30', label: '흡연 경험' }, { key: 'q31', label: '흡연 시작 학교급' }, { key: 'q32', label: '흡연 시작 학년' },
+  { key: 'q33', label: '하루 흡연량(개비)' }, { key: 'q34', label: '흡연 이유' }, { key: 'q34_etc', label: '기타 흡연 이유' },
+  { key: 'q40', label: '음주 경험' }, { key: 'q41', label: '음주 시작 학교급' }, { key: 'q42', label: '음주 시작 학년' },
+  { key: 'q43', label: '음주 빈도' }, { key: 'q44', label: '음주 이유' }, { key: 'q44_etc', label: '기타 음주 이유' },
+  { key: 'timestamp', label: '제출시각' }
+];
+const DEFAULT_COLUMN_KEYS = ['grade', 'class', 'number', 'name', 'disease_detail', 'allergy_detail', 'q1', 'q2', 'q3', 'q23'];
+
+// 질환별 빠른 필터 — 하나 이상 체크하면 해당 조건 중 하나라도 맞는 학생만 표시(OR)
+const CATEGORY_FILTERS = [
+  { key: 'diabetes1', label: '1형 당뇨', test: a => String(a.q11 || '').includes('제1형 당뇨') },
+  { key: 'diabetes2', label: '2형 당뇨', test: a => String(a.q11 || '').includes('제2형 당뇨') },
+  { key: 'rare', label: '희귀난치성질환', test: a => String(a.q11 || '').includes('희귀난치성질환') },
+  { key: 'disability', label: '장애', test: a => ['시력장애', '청력장애', '언어장애', '지체장애'].some(t => String(a.q11 || '').includes(t)) },
+  { key: 'allergy', label: '알레르기', test: a => a.q20 === '예' },
+  { key: 'smoking', label: '흡연', test: a => a.q30 === '예' },
+  { key: 'drinking', label: '음주', test: a => a.q40 === '예' }
+];
+
+(function initCategoryFilters_() {
+  const wrap = document.getElementById('categoryFilterList');
+  wrap.innerHTML = CATEGORY_FILTERS.map(f =>
+    `<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; padding:7px 12px; border:2px solid var(--border-strong); border-radius:var(--radius-pill); background:#fff;">
+      <input type="checkbox" class="category-checkbox" value="${f.key}" style="width:15px;height:15px;">
+      ${f.label}
+    </label>`
+  ).join('');
+  wrap.querySelectorAll('.category-checkbox').forEach(cb => cb.addEventListener('change', renderResponseTable_));
+})();
+
+// 알레르기 유형(q21)에 딸린 세부 항목들을 "유형(세부내용)" 형태로 한 칸에 묶어서 보여줌
+function computeAllergyDetail_(a) {
+  if (!a.q21) return '';
+  const detailMap = { '식품': a.q21_food_detail, '약물': a.q21_drug_detail, '동물': a.q21_animal_detail, '기타': a.q21_etc };
+  return String(a.q21).split(',').map(t => t.trim()).map(t => detailMap[t] ? `${t}(${detailMap[t]})` : t).join(', ');
+}
+// 질환명(q11)에 딸린 세부 항목들도 동일한 방식으로 묶어서 보여줌
+function computeDiseaseDetail_(a) {
+  if (!a.q11) return '';
+  return String(a.q11).split(',').map(t => t.trim()).map(t => {
+    if (t === '우울증 등의 정서적 질환' && a.q11_emotion_detail) return `${t}(${a.q11_emotion_detail})`;
+    if (t === '희귀난치성질환' && a.q11_rare_detail) return `${t}(${a.q11_rare_detail})`;
+    if (['시력장애', '청력장애', '언어장애', '지체장애'].indexOf(t) !== -1 && a.q11_disability_grade) return `${t}(${a.q11_disability_grade})`;
+    if (t === '아토피' && (a.q11_atopy_area || a.q11_atopy_severity)) return `${t}(${a.q11_atopy_area || ''}${a.q11_atopy_severity ? ' · 중증도 ' + a.q11_atopy_severity : ''})`;
+    if (t === '기타' && a.q11_etc) return `${t}(${a.q11_etc})`;
+    return t;
+  }).join(', ');
+}
+function getColumnValue_(colKey, student) {
+  const a = student.latest;
+  if (colKey === 'allergy_detail') return computeAllergyDetail_(a);
+  if (colKey === 'disease_detail') return computeDiseaseDetail_(a);
+  if (colKey === 'number') return student.number;
+  if (colKey === 'name') return student.name;
+  return a[colKey] || '';
+}
+
+// 컬럼 선택 체크박스 최초 렌더링
+(function initColumnCheckboxes_() {
+  const wrap = document.getElementById('columnCheckboxes');
+  wrap.innerHTML = COLUMN_DEFS.map(c =>
+    `<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+      <input type="checkbox" class="col-checkbox" value="${c.key}" ${DEFAULT_COLUMN_KEYS.indexOf(c.key) !== -1 ? 'checked' : ''} style="width:15px;height:15px;">
+      ${c.label}
+    </label>`
+  ).join('');
+  wrap.querySelectorAll('.col-checkbox').forEach(cb => cb.addEventListener('change', renderResponseTable_));
+})();
+
+document.getElementById('columnToggleBtn').addEventListener('click', () => {
+  const panel = document.getElementById('columnPanel');
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  document.getElementById('columnToggleBtn').textContent = (isHidden ? '▾' : '▸') + ' 표에 표시할 항목 선택';
+});
+
+document.getElementById('colSelectAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.col-checkbox').forEach(cb => { cb.checked = true; });
+  renderResponseTable_();
+});
+document.getElementById('colSelectNoneBtn').addEventListener('click', () => {
+  document.querySelectorAll('.col-checkbox').forEach(cb => { cb.checked = false; });
+  renderResponseTable_();
+});
+document.getElementById('colSelectDefaultBtn').addEventListener('click', () => {
+  document.querySelectorAll('.col-checkbox').forEach(cb => { cb.checked = DEFAULT_COLUMN_KEYS.indexOf(cb.value) !== -1; });
+  renderResponseTable_();
+});
+
+document.getElementById('respFetchBtn').addEventListener('click', async () => {
+  const grade = document.getElementById('respGrade').value;
+  const classNo = document.getElementById('respClass').value;
+  const number = document.getElementById('respNumber').value;
+  const errEl = document.getElementById('respError');
+  errEl.textContent = '';
+
+  const res = await apiPost('getResponses', { password: adminPassword, grade, class: classNo, number });
+  if (!res.ok) { errEl.textContent = res.message || '조회 중 오류가 발생했습니다.'; return; }
+
+  lastFetchedStudents = res.students;
+  document.getElementById('respFilters').classList.toggle('hidden', lastFetchedStudents.length === 0);
+  renderResponseTable_();
+});
+
+// 필터/컬럼 선택 변경 시 다시 서버에 요청하지 않고, 이미 가져온 목록 안에서 즉시 반영
+['filterAbnormalOnly'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderResponseTable_);
+});
+
+function renderResponseTable_() {
+  const resultEl = document.getElementById('respResult');
+  const abnormalOnly = document.getElementById('filterAbnormalOnly').checked;
+  const checkedCategories = [...document.querySelectorAll('.category-checkbox:checked')].map(cb => cb.value);
+  const selectedCols = [...document.querySelectorAll('.col-checkbox:checked')].map(cb => cb.value);
+
+  // 유소견 후보: 질병·알레르기·미세먼지 민감군 중 하나라도 "예"
+  const isAbnormalCandidate = (a) => a.q10 === '예' || a.q20 === '예' || a.q23 === '예';
+
+  let students = lastFetchedStudents.filter(s => {
+    const a = s.latest;
+    if (abnormalOnly && !isAbnormalCandidate(a)) return false;
+    if (checkedCategories.length > 0) {
+      const matchesAny = checkedCategories.some(key => CATEGORY_FILTERS.find(f => f.key === key).test(a));
+      if (!matchesAny) return false;
+    }
+    return true;
+  });
+
+  if (lastFetchedStudents.length === 0) {
+    resultEl.innerHTML = '<p class="empty-note">해당 조건의 제출 내역이 없습니다.</p>';
+    return;
+  }
+  if (students.length === 0) {
+    resultEl.innerHTML = '<p class="empty-note">필터 조건에 맞는 학생이 없습니다.</p>';
+    return;
+  }
+  if (selectedCols.length === 0) {
+    resultEl.innerHTML = `<p class="subtitle" style="margin:14px 0;">${students.length}명 / 전체 ${lastFetchedStudents.length}명</p><p class="empty-note">표시할 항목을 1개 이상 선택해 주세요.</p>`;
+    return;
+  }
+
+  const colDefsByKey = {};
+  COLUMN_DEFS.forEach(c => { colDefsByKey[c.key] = c; });
+
+  resultEl.innerHTML = `
+    <p class="subtitle" style="margin:14px 0 6px;">${students.length}명 / 전체 ${lastFetchedStudents.length}명</p>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        ${selectedCols.map(k => `<th>${colDefsByKey[k] ? colDefsByKey[k].label : k}</th>`).join('')}
+        <th>중복</th>
+      </tr></thead>
+      <tbody>${students.map((s) => {
+        const abnormal = isAbnormalCandidate(s.latest);
+        return `<tr${abnormal ? ' style="background:#FDF0EE;"' : ''}>
+          ${selectedCols.map(k => `<td${abnormal ? ' style="color:var(--danger); font-weight:700;"' : ''}>${getColumnValue_(k, s)}</td>`).join('')}
+          <td>${s.submissionCount > 1 ? `<span class="badge badge-dup">${s.submissionCount}회</span>` : `<span class="badge badge-ok">1회</span>`}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
+/* ── 탭3: 미제출자 조회 ──────────────────────────────── */
+let unsubTargets = []; // [{grade, class}] — grade/class가 ''이면 "전체"
+
+function targetLabel_(t) {
+  const g = t.grade ? `${t.grade}학년` : '전체 학년';
+  const c = t.class ? `${t.class}반` : '전체 반';
+  return `${g} ${c}`;
+}
+
+function renderUnsubChips_() {
+  const wrap = document.getElementById('unsubChipList');
+  wrap.innerHTML = unsubTargets.map((t, i) =>
+    `<span class="chip">${targetLabel_(t)}<button data-idx="${i}" title="삭제">×</button></span>`
+  ).join('');
+  wrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      unsubTargets.splice(Number(btn.dataset.idx), 1);
+      renderUnsubChips_();
+    });
+  });
+}
+
+document.getElementById('unsubAddChipBtn').addEventListener('click', () => {
+  const grade = document.getElementById('unsubGrade').value;
+  const classNo = document.getElementById('unsubClass').value;
+  unsubTargets.push({ grade, class: classNo });
+  document.getElementById('unsubGrade').value = '';
+  document.getElementById('unsubClass').value = '';
+  renderUnsubChips_();
+});
+
+document.getElementById('unsubFetchBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('unsubError');
+  errEl.textContent = '';
+  const formType = document.getElementById('unsubFormType').value;
+
+  // 대상 목록에 아무것도 추가하지 않았다면, 지금 입력창에 있는 값 하나를 그대로 조회 대상으로 사용
+  let targets = unsubTargets.slice();
+  if (targets.length === 0) {
+    targets = [{ grade: document.getElementById('unsubGrade').value, class: document.getElementById('unsubClass').value }];
+  }
+
+  const resultEl = document.getElementById('unsubResult');
+  resultEl.innerHTML = '<p class="empty-note">조회 중…</p>';
+
+  // 각 대상마다 조회해서 하나의 그룹 목록으로 합침
+  let allGroups = [];
+  for (const t of targets) {
+    const res = await apiGet('unsubmitted', { grade: t.grade, class: t.class, formType });
+    if (!res.ok) { errEl.textContent = res.message || '조회 중 오류가 발생했습니다.'; resultEl.innerHTML = ''; return; }
+    if (res.unsubmitted) {
+      // 학년·반을 둘 다 지정한 단순 조회 결과
+      allGroups.push({ grade: t.grade, class: t.class, unsubmitted: res.unsubmitted });
+    } else {
+      allGroups = allGroups.concat(res.groups);
+    }
+  }
+
+  const totalUnsub = allGroups.reduce((sum, g) => sum + g.unsubmitted.length, 0);
+  if (totalUnsub === 0) {
+    resultEl.innerHTML = '<p class="empty-note">🎉 조회 대상 전원 제출 완료했습니다!</p>';
+    return;
+  }
+
+  resultEl.innerHTML = allGroups
+    .filter(g => g.unsubmitted.length > 0)
+    .map(g => `
+      <div class="group-heading">${targetLabel_(g)} — 미제출 ${g.unsubmitted.length}명</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>번호</th><th>이름</th></tr></thead>
+        <tbody>${g.unsubmitted.map(r => `<tr><td>${r.number}</td><td>${r.name}</td></tr>`).join('')}</tbody>
+      </table></div>`)
+    .join('');
+});
+
+/* ── 탭4: 통계 ──────────────────────────────────────── */
+document.getElementById('statsFetchBtn').addEventListener('click', async () => {
+  const grade = document.getElementById('statsGrade').value;
+  const classNo = document.getElementById('statsClass').value;
+  const errEl = document.getElementById('statsError');
+  errEl.textContent = '';
+
+  const res = await apiPost('getStats', { password: adminPassword, grade, class: classNo });
+  if (!res.ok) { errEl.textContent = res.message || '조회 중 오류가 발생했습니다.'; return; }
+  renderStats_(res);
+});
+
+function statCard_(label, value, danger) {
+  return `<div style="flex:1; min-width:110px; border:2px solid var(--border-strong); border-radius:var(--radius-md); padding:14px; text-align:center; background:${danger ? '#FDF0EE' : '#FFFFFF'};">
+    <div style="font-size:12px; color:var(--ink-soft); margin-bottom:6px;">${label}</div>
+    <div style="font-size:22px; font-weight:800; color:${danger ? 'var(--danger)' : 'var(--ink)'};">${value}</div>
+  </div>`;
+}
+
+function renderStatItem_(s) {
+  if (s.q_type === 'number') {
+    return `<details style="margin-top:10px; border:2px solid var(--border-strong); border-radius:var(--radius-md); padding:10px 14px; background:#FFFFFF;">
+      <summary style="cursor:pointer; font-weight:600; font-size:14px;">${s.label} (응답 ${s.answered}명)</summary>
+      <div class="a" style="margin-top:8px;">평균 ${s.average != null ? s.average : '-'}</div>
+    </details>`;
+  }
+  const entries = Object.entries(s.counts).sort((a, b) => b[1] - a[1]);
+  const body = entries.length === 0
+    ? '<p class="empty-note" style="padding:8px 0;">응답 없음</p>'
+    : entries.map(([opt, count]) => `
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; font-size:13px;">
+        <div style="width:130px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${opt}">${opt}</div>
+        <div style="flex:1; background:#F4EEDD; border:2px solid var(--border-strong); border-radius:6px; overflow:hidden; height:18px;">
+          <div style="width:${Math.round(count / entries[0][1] * 100)}%; background:var(--khaki); height:100%;"></div>
+        </div>
+        <div style="width:50px; flex:none; text-align:right; font-weight:600;">${count}명</div>
+      </div>`).join('');
+
+  return `<details style="margin-top:14px; border:2px solid var(--border-strong); border-radius:var(--radius-md); padding:12px 14px; background:#FFFFFF;">
+    <summary style="cursor:pointer; font-weight:600; font-size:14px;">${s.label} (응답 ${s.answered}명)</summary>
+    <div style="margin-top:10px;">${body}</div>
+  </details>`;
+}
+
+function renderStats_(res) {
+  const rate = res.totalRoster ? Math.round((res.totalSubmitted / res.totalRoster) * 1000) / 10 : 0;
+  const resultEl = document.getElementById('statsResult');
+  resultEl.innerHTML = `
+    <div class="row" style="flex-wrap:wrap; gap:12px; margin:18px 0;">
+      ${statCard_('전체 인원', res.totalRoster + '명')}
+      ${statCard_('제출 인원', res.totalSubmitted + '명')}
+      ${statCard_('제출률', rate + '%')}
+      ${statCard_('🔴 유소견 후보', res.abnormalCount + '명', true)}
+    </div>
+    ${res.stats.map(s => renderStatItem_(s)).join('')}`;
+}
+</script>
+</body>
+</html>
