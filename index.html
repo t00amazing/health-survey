@@ -6,6 +6,7 @@
 <title>학생 건강조사</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <style>
   :root {
     --bg: #F8F1DC;
@@ -200,6 +201,24 @@
   .q-notice li { margin-bottom: 8px; }
   .q-notice li:last-child { margin-bottom: 0; }
   .q-notice strong { font-weight: 700; }
+
+  /* 동의서(응급처치/보건일지) 전용 */
+  .info-table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 13px; }
+  .info-table th, .info-table td { border: 2px solid var(--border-strong); padding: 10px 12px; text-align: left; vertical-align: top; }
+  .info-table th { background: #F4EEDD; width: 34%; font-weight: 700; white-space: nowrap; }
+  .info-table ul { margin: 0; padding-left: 18px; }
+  .info-table li { margin-bottom: 6px; }
+  .info-table li:last-child { margin-bottom: 0; }
+
+  .notice-box { background: #FDF6E8; border: 2px solid var(--border-strong); border-radius: var(--radius-md); padding: 14px 16px; font-size: 13px; line-height: 1.7; color: var(--ink); margin-bottom: 16px; }
+  .notice-box.warn { background: #FDEEEA; }
+  .notice-box strong { font-weight: 700; }
+  .notice-box.warn strong { color: var(--danger); }
+
+  .sig-wrap { border: 2px solid var(--border-strong); border-radius: var(--radius-md); background: #FDFBF4; margin-bottom: 10px; touch-action: none; }
+  canvas.sig-canvas { display: block; width: 100%; height: 160px; }
+  .sig-actions { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .sig-clear { font-size: 12.5px; color: var(--ink-soft); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; }
 
   .field select:focus,
   .field input:focus,
@@ -426,17 +445,120 @@
     </div>
   </div>
 
-  <!-- 3. 제출 완료 화면 -->
+  <!-- 3. 응급처치 동의서 (1/2) -->
+  <div class="card hidden" id="emergencyCard">
+    <a class="back-link" id="emergencyBackLink">← 처음으로</a>
+    <div class="progress" id="consentProgress"></div>
+    <h2 class="section-title" id="emgTitle"></h2>
+    <p class="section-desc" id="emgSchoolLine"></p>
+
+    <div class="notice-box">
+      <strong>개인정보 활용 안내</strong><br>
+      <span id="emgPrivacyText"></span>
+    </div>
+    <div class="option-list" id="emgPrivacyConsentList"></div>
+
+    <table class="info-table">
+      <tr><th>학년/반/번호</th><td id="emgStudentInfo"></td></tr>
+      <tr><th>이름</th><td id="emgStudentName"></td></tr>
+    </table>
+    <div class="field"><label>생년월일</label><input type="text" id="emgBirthdate" inputmode="numeric" maxlength="10" placeholder="예: 2010-05-14"></div>
+    <div class="field">
+      <label>주소</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="emgAddressRoad" placeholder="주소 검색 또는 직접 입력" style="flex:1;">
+        <button type="button" class="pill pill-outline" id="addressSearchBtn" style="padding:12px 16px; white-space:nowrap; flex:none;">주소 검색</button>
+      </div>
+      <input type="text" id="emgAddressDetail" placeholder="상세주소 입력 (동/호수 등)" style="margin-top:8px;">
+    </div>
+
+    <p class="section-desc" style="margin-top:6px; font-weight:600; color:var(--ink);">응급상황 시 연락처</p>
+    <div class="row">
+      <div class="field"><label>관계</label>
+        <select id="emgContact1Relation"><option value="">선택</option><option value="부">부</option><option value="모">모</option><option value="조부모">조부모</option><option value="기타">기타</option></select>
+      </div>
+      <div class="field"><label>연락처</label><input type="tel" id="emgContact1Phone" placeholder="010-1234-1234"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>관계</label>
+        <select id="emgContact2Relation"><option value="">선택</option><option value="부">부</option><option value="모">모</option><option value="조부모">조부모</option><option value="기타">기타</option></select>
+      </div>
+      <div class="field"><label>연락처</label><input type="tel" id="emgContact2Phone" placeholder="010-1234-1234"></div>
+    </div>
+
+    <div class="notice-box" style="margin-top:16px;">
+      <strong>응급처치 및 이송 안내</strong><br><br>
+      <span id="emgNotice1"></span><br><br>
+      <span id="emgNotice2"></span>
+    </div>
+    <div class="option-list">
+      <label class="option-item" id="emgReadCheckWrap">
+        <input type="checkbox" id="emgReadCheck"> 위 안내 사항을 읽고 확인했습니다
+      </label>
+    </div>
+
+    <div class="notice-box warn">
+      <strong>본 동의서는 학부모(보호자)의 확인 서명이 반드시 필요하며, 학생이 대신 서명할 수 없습니다.</strong>
+    </div>
+    <div class="notice-box" id="emgConsentStatement"></div>
+    <div class="field"><label>학부모(보호자) 성명</label><input type="text" id="emgGuardianName" placeholder="예: 홍길동"></div>
+    <div class="field">
+      <label>서명 <span style="font-weight:400; color:var(--ink-soft);">— 성명을 정자체(또박또박 정자)로 써 주세요</span></label>
+      <div class="sig-wrap"><canvas class="sig-canvas" id="emgSignature"></canvas></div>
+      <div class="sig-actions"><button class="sig-clear" data-target="emgSignature">다시 서명하기</button></div>
+    </div>
+
+    <div class="row" style="margin-top:22px;"><button class="pill pill-khaki" id="emgNextBtn" style="width:100%;">다음 (온라인보건일지 동의서) →</button></div>
+    <p class="error" id="emgError"></p>
+  </div>
+
+  <!-- 4. 온라인보건일지 동의서 (2/2) -->
+  <div class="card hidden" id="healthLogCard">
+    <a class="back-link" id="healthLogBackLink">← 이전 단계</a>
+    <div class="progress" id="consentProgress2"></div>
+    <h2 class="section-title" id="hlTitle"></h2>
+    <p class="section-desc" id="hlSchoolLine"></p>
+
+    <table class="info-table">
+      <tr><th>수집·이용 목적</th><td id="hlPurpose"></td></tr>
+      <tr><th>수집 항목</th><td id="hlItems"></td></tr>
+      <tr><th>보유 및 이용 기간</th><td id="hlPeriod"></td></tr>
+    </table>
+
+    <p class="section-desc" style="font-weight:600; color:var(--ink); margin-top:4px;">개인정보 처리위탁에 관한 사항</p>
+    <table class="info-table"><tr><td id="hlDelegation"></td></tr></table>
+
+    <div class="notice-box warn">
+      <strong>본 동의서는 학부모(보호자)의 확인 서명이 반드시 필요하며, 학생이 대신 서명할 수 없습니다.</strong>
+    </div>
+    <div class="notice-box" id="hlConsentStatement"></div>
+    <div class="option-list">
+      <label class="option-item" id="hlConfirmWrap">
+        <input type="checkbox" id="hlConfirmCheck"> 위 내용에 동의합니다
+      </label>
+    </div>
+    <div class="field"><label>학부모(보호자) 성명</label><input type="text" id="hlGuardianName" placeholder="예: 홍길동"></div>
+    <div class="field">
+      <label>서명 <span style="font-weight:400; color:var(--ink-soft);">— 성명을 정자체(또박또박 정자)로 써 주세요</span></label>
+      <div class="sig-wrap"><canvas class="sig-canvas" id="hlSignature"></canvas></div>
+      <div class="sig-actions"><button class="sig-clear" data-target="hlSignature">다시 서명하기</button></div>
+    </div>
+
+    <div class="row" style="margin-top:22px;"><button class="pill pill-khaki" id="hlSubmitBtn" style="width:100%;">제출하기 →</button></div>
+    <p class="error" id="hlError"></p>
+  </div>
+
+  <!-- 5. 제출 완료 화면 -->
   <div class="card hidden" id="doneCard" style="text-align:center;">
     <div class="done-icon">🌤️</div>
     <p class="done-title">제출이 완료되었습니다</p>
-    <p class="done-desc">응답해 주셔서 감사합니다.<br>추가로 알릴 사항이 있으면 보건실로 연락 주세요.</p>
+    <p class="done-desc">학생 건강조사, 응급처치 동의서, 온라인보건일지 이용 동의서 모두 정상 접수되었습니다.<br>궁금하신 점은 보건실로 연락 주세요.</p>
     <div class="btn-row">
       <button class="pill pill-khaki" style="flex:1;" onclick="location.reload()">처음으로</button>
     </div>
   </div>
 
-  <!-- 4. 미제출자 조회 화면 -->
+  <!-- 6. 미제출자 조회 화면 -->
   <div class="card hidden" id="unsubCard">
     <a class="back-link" id="unsubBackLink">← 처음으로</a>
     <div class="field">
@@ -462,7 +584,7 @@
      (박보건/김보건/이보건 예시 — health-survey-setup.gs와 동일).
    ========================================================== */
 const CONFIG = {
-  API_BASE_URL: 'https://script.google.com/macros/library/d/1xluGRHqW3Y3xD3nij70SI_FQp9ThSRl6TgKJxMeL2pNSQtV7TIAkgkfo/3', // 예: 'https://script.google.com/macros/s/XXXXXXXX/exec'
+  API_BASE_URL: 'https://script.google.com/macros/s/AKfycbxu1Rt9GVQzIsYaB6evwX3oj-99stHvm7eBa0I332E7kI0E_jgG7LYjtGopVqgTlKk/exec', // 예: 'https://script.google.com/macros/s/XXXXXXXX/exec'
   MAX_CLASS: 10
 };
 const DEMO_MODE = !CONFIG.API_BASE_URL;
@@ -520,7 +642,24 @@ const DEMO = {
     {grade:1, class:1, number:2, name:'김보건'},
     {grade:1, class:1, number:3, name:'이보건'}
   ],
-  submittedSurveyNumbers: { '1-1': ['1','2','3'] }
+  submittedSurveyNumbers: { '1-1': ['1','2','3'] },
+  forms: {
+    emergency_care: {
+      form_title: '개인정보 활용 및 응급처치 동의서', school_name: '전주여자고등학교 보건실', school_phone: '710-5561',
+      privacy_items: '학년,반,번호,이름,주소,학부모 전화번호,건강정보', privacy_purpose: '응급환자 관리', privacy_period: '1년(2026.03.01~2027.02.28)',
+      procedure_notice_1: '위급하지 않으나 병원진료가 필요한 학생의 사고나 질병 시 가장 먼저 부모님께 연락드립니다. 보건실에서 응급처치하고 병원 진료 의뢰가 필요한 경우 학부모에게 연락하여 학생을 인계한 후 학부모 동행하여 병원진료를 받는 것을 원칙으로 함.',
+      procedure_notice_2: '위급하거나 위독할 때는 보호자에게 연락 후 교사가 동행하며, 필요한 경우에는 119 구급대에 연락하여 병원으로 바로 후송합니다.',
+      consent_statement: '사고 발생 시 응급처치는 학부모의 동의하에 이루어짐을 허락합니다. 따라서 응급상황 시 처치에 대한 신속한 체계가 이루어질 수 있도록 응급처치(절차)에 대한 권한을 귀 기관에 위임할 것을 동의합니다.'
+    },
+    health_log_use: {
+      form_title: '온라인 보건일지(스마일보건) 이용을 위한 개인정보(민감정보) 수집·이용 동의서', school_name: '전주여자고등학교',
+      privacy_purpose: '건강 이상 발생 시 신속한 응급처치 지원 및 보건교육 자료 활용, 만성질환·알레르기 등 특이사항 사전 파악을 통한 안전관리, 내원 기록의 체계적 관리',
+      privacy_items: '[일반정보] 학년·반·번호, 성명 / [민감정보] 내원 일시, 주호소 증상, 처치 및 투약 내용, 기저질환, 알레르기(약물·음식), 복용 중인 약물 / [필요시] 응급 상황 통보를 위한 보호자 연락처',
+      privacy_period: '수집일로부터 1년',
+      delegation_info: '<ul><li><strong>수탁자</strong>: (주)브레인다이브</li><li><strong>위탁업무</strong>: 보건업무 행정지원 시스템 제공·운영, 보건정보 전산 입력·저장·조회·출력, 통계 산출 및 행정문서 작성 지원 등</li><li><strong>위탁기간</strong>: 사용자 등록일~해지일</li><li><strong>연락처</strong>: 070-4138-0788</li></ul>',
+      consent_statement: '위 개인정보(민감정보 포함)의 수집·이용 및 처리위탁 사항에 동의합니다.'
+    }
+  }
 };
 
 /* 상태 */
@@ -529,6 +668,7 @@ let SECTION_LIST = [];
 let currentSectionRealIndex = 0; // SECTION_LIST 안에서의 실제 인덱스 (표시 여부와 무관한 절대 위치)
 let answers = {};
 let student = { grade: '', class: '', number: '', name: '' };
+let FORMS = {}; // 응급처치/보건일지 동의서 양식 (initConsent로 불러옴)
 
 /* API 호출 헬퍼 (데모/실서버 겸용) */
 async function apiGet(action, params) {
@@ -549,6 +689,7 @@ async function apiPost(action, payload) {
 
 function demoGet_(action, params) {
   if (action === 'init') return { ok: true, config: DEMO.config, questions: DEMO.questions };
+  if (action === 'initConsent') return { ok: true, forms: DEMO.forms };
   if (action === 'unsubmitted') {
     const key = `${params.grade}-${params.class}`;
     const submitted = (params.formType === 'survey' || !params.formType)
@@ -572,14 +713,23 @@ function demoPost_(action, payload) {
     console.log('[데모 제출]', payload);
     return { ok: true, submission_id: 'DEMO-' + Date.now() };
   }
+  if (action === 'submitConsent') {
+    console.log('[데모 동의서 제출]', payload);
+    return { ok: true };
+  }
   return { ok: false, message: '알 수 없는 요청입니다.' };
 }
 
 /* 화면 전환 유틸 */
 function showCard(id) {
-  ['authCard','surveyCard','doneCard','unsubCard'].forEach(cid => {
+  ['authCard','surveyCard','emergencyCard','healthLogCard','doneCard','unsubCard'].forEach(cid => {
     document.getElementById(cid).classList.toggle('hidden', cid !== id);
   });
+  // 방금 화면에 나타난 카드 안의 서명 캔버스는 hidden 상태일 때 0x0으로 잡혀 있었을 수 있어,
+  // 실제로 보이는 지금 다시 크기를 맞춘다 (signaturePads가 아직 없으면 아무것도 안 함).
+  if (typeof signaturePads !== 'undefined') {
+    Object.values(signaturePads).forEach(pad => pad.resize());
+  }
 }
 
 /* 초기화 */
@@ -632,6 +782,192 @@ function formatPhone_(raw) {
   if (digits.length < 8) return digits.slice(0, 3) + '-' + digits.slice(3);
   return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
 }
+function attachPhoneFormat_(input) {
+  input.addEventListener('input', () => {
+    const cursorPos = input.selectionStart, beforeLen = input.value.length;
+    const formatted = formatPhone_(input.value);
+    input.value = formatted;
+    input.setSelectionRange(Math.max(0, cursorPos + (formatted.length - beforeLen)), Math.max(0, cursorPos + (formatted.length - beforeLen)));
+  });
+}
+attachPhoneFormat_(document.getElementById('emgContact1Phone'));
+attachPhoneFormat_(document.getElementById('emgContact2Phone'));
+
+/* 생년월일: 전화번호와 동일하게, 숫자만 입력해도 2010-05-14 형태로 자동 하이픈 삽입 */
+function formatBirthdate_(raw) {
+  const digits = raw.replace(/[^0-9]/g, '').slice(0, 8);
+  if (digits.length < 5) return digits;
+  if (digits.length < 7) return digits.slice(0, 4) + '-' + digits.slice(4);
+  return digits.slice(0, 4) + '-' + digits.slice(4, 6) + '-' + digits.slice(6);
+}
+(function attachBirthdateFormat_() {
+  const input = document.getElementById('emgBirthdate');
+  input.addEventListener('input', () => {
+    const cursorPos = input.selectionStart, beforeLen = input.value.length;
+    const formatted = formatBirthdate_(input.value);
+    input.value = formatted;
+    input.setSelectionRange(Math.max(0, cursorPos + (formatted.length - beforeLen)), Math.max(0, cursorPos + (formatted.length - beforeLen)));
+  });
+})();
+
+/* 주소: 다음(카카오) 우편번호 서비스로 도로명주소를 검색해 채우고, 세부주소는 직접 입력 */
+function openAddressSearch_() {
+  if (typeof daum === 'undefined' || !daum.Postcode) {
+    alert('주소 검색 서비스를 불러오지 못했습니다. 네트워크 상태를 확인하시거나, 주소 칸에 직접 입력해 주세요.');
+    return;
+  }
+  new daum.Postcode({
+    oncomplete: function (data) {
+      document.getElementById('emgAddressRoad').value = data.roadAddress || data.jibunAddress || '';
+      document.getElementById('emgAddressDetail').focus();
+    }
+  }).open();
+}
+document.getElementById('addressSearchBtn').addEventListener('click', openAddressSearch_);
+
+/* ── 서명 캔버스 ─────────────────────────────────────── */
+const signaturePads = {};
+function initSignaturePad_(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return; // 카드가 아직 hidden이면 나중에 showCard에서 다시 시도
+    const targetW = Math.round(rect.width * 2), targetH = Math.round(rect.height * 2);
+    if (canvas.width === targetW && canvas.height === targetH) return; // 이미 맞는 크기면 그대로 둠(서명 보존)
+    canvas.width = targetW; canvas.height = targetH;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(2, 2); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.strokeStyle = '#1E2A3A';
+  }
+  resize();
+  let drawing = false, hasDrawn = false;
+  function pos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+  }
+  function start(e) { drawing = true; hasDrawn = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+  function move(e) { if (!drawing) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+  function end() { drawing = false; }
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move); canvas.addEventListener('touchend', end);
+  signaturePads[canvasId] = {
+    clear: () => { ctx.clearRect(0, 0, canvas.width, canvas.height); hasDrawn = false; },
+    isEmpty: () => !hasDrawn,
+    toDataURL: () => canvas.toDataURL('image/png'),
+    resize: resize
+  };
+}
+['emgSignature', 'hlSignature'].forEach(initSignaturePad_);
+document.querySelectorAll('.sig-clear').forEach(btn => {
+  btn.addEventListener('click', () => signaturePads[btn.dataset.target].clear());
+});
+
+/* ── 1/2 응급처치 동의서 ─────────────────────────────── */
+function renderEmergencyForm_() {
+  const f = FORMS.emergency_care;
+  document.getElementById('emgTitle').textContent = f.form_title;
+  document.getElementById('emgSchoolLine').textContent = `${f.school_name}${f.school_phone ? ' · ☎ ' + f.school_phone : ''}`;
+  document.getElementById('emgPrivacyText').innerHTML =
+    `수집 항목: ${f.privacy_items}<br>이용 목적: ${f.privacy_purpose}<br>보유 및 이용 기간: ${f.privacy_period}`;
+  document.getElementById('emgPrivacyConsentList').innerHTML = ['동의', '비동의'].map(v =>
+    `<label class="option-item"><input type="radio" name="emgPrivacyConsent" value="${v}"> 위 개인정보 제공에 ${v}합니다</label>`).join('');
+  document.getElementById('emgStudentInfo').textContent = `${student.grade}학년 ${student.class}반 ${student.number}번`;
+  document.getElementById('emgStudentName').textContent = student.name;
+  document.getElementById('emgNotice1').textContent = f.procedure_notice_1;
+  document.getElementById('emgNotice2').textContent = f.procedure_notice_2;
+  document.getElementById('emgConsentStatement').textContent = f.consent_statement;
+
+  // 건강조사(섹션2)에서 이미 받은 보호자 관계·연락처를 응급연락처1에 자동으로 채워준다
+  if (answers.q2) document.getElementById('emgContact1Relation').value = answers.q2;
+  if (answers.q3) document.getElementById('emgContact1Phone').value = answers.q3;
+}
+
+document.getElementById('emgNextBtn').addEventListener('click', () => {
+  const errEl = document.getElementById('emgError');
+  errEl.textContent = '';
+  const privacyConsent = (document.querySelector('input[name=emgPrivacyConsent]:checked') || {}).value;
+  const birthdate = document.getElementById('emgBirthdate').value.trim();
+  const addressRoad = document.getElementById('emgAddressRoad').value.trim();
+  const addressDetail = document.getElementById('emgAddressDetail').value.trim();
+  const c1r = document.getElementById('emgContact1Relation').value;
+  const c1p = document.getElementById('emgContact1Phone').value.trim();
+  const readChecked = document.getElementById('emgReadCheck').checked;
+  const guardianName = document.getElementById('emgGuardianName').value.trim();
+
+  if (!privacyConsent) return errEl.textContent = '개인정보 제공 동의 여부를 선택해 주세요.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) return errEl.textContent = '생년월일을 2010-05-14 형식으로 입력해 주세요.';
+  if (!addressRoad) return errEl.textContent = '주소 검색을 눌러 도로명주소를 선택해 주세요.';
+  if (!addressDetail) return errEl.textContent = '상세주소(동/호수 등)를 입력해 주세요.';
+  if (!c1r || !c1p) return errEl.textContent = '응급상황 시 연락처(관계·전화번호)를 최소 1개 입력해 주세요.';
+  if (!readChecked) return errEl.textContent = '응급처치 및 이송 안내 사항을 확인 후 체크해 주세요.';
+  if (!guardianName) return errEl.textContent = '학부모(보호자) 성명을 입력해 주세요.';
+  if (signaturePads.emgSignature.isEmpty()) return errEl.textContent = '보호자 서명을 받아 주세요.';
+
+  window.__emgData = {
+    privacy_consent: privacyConsent, birthdate, address: addressRoad + ' ' + addressDetail,
+    contact1_relation: c1r, contact1_phone: c1p,
+    contact2_relation: document.getElementById('emgContact2Relation').value,
+    contact2_phone: document.getElementById('emgContact2Phone').value.trim(),
+    guardian_name_typed: guardianName,
+    signature_image_base64: signaturePads.emgSignature.toDataURL()
+  };
+
+  renderHealthLogForm_();
+  document.getElementById('hlGuardianName').value = guardianName; // 보호자 성명 이어받기
+  showCard('healthLogCard');
+  document.getElementById('consentProgress2').textContent = '2 / 2 단계 — 온라인보건일지 이용 동의서';
+});
+
+document.getElementById('emergencyBackLink').addEventListener('click', () => {
+  if (confirm('처음으로 돌아가면 입력한 내용이 사라집니다. 계속할까요?')) location.reload();
+});
+
+/* ── 2/2 온라인보건일지 동의서 ───────────────────────── */
+function renderHealthLogForm_() {
+  const f = FORMS.health_log_use;
+  document.getElementById('hlTitle').textContent = f.form_title;
+  document.getElementById('hlSchoolLine').textContent = f.school_name || '';
+  document.getElementById('hlPurpose').textContent = f.privacy_purpose;
+  document.getElementById('hlItems').textContent = f.privacy_items;
+  document.getElementById('hlPeriod').textContent = f.privacy_period;
+  document.getElementById('hlDelegation').innerHTML = f.delegation_info; // 글머리기호(<ul><li>) 포함 HTML 허용
+  document.getElementById('hlConsentStatement').textContent = f.consent_statement;
+}
+
+document.getElementById('healthLogBackLink').addEventListener('click', () => {
+  showCard('emergencyCard');
+  document.getElementById('consentProgress').textContent = '1 / 2 단계 — 응급처치 동의서';
+});
+
+document.getElementById('hlSubmitBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('hlError');
+  errEl.textContent = '';
+  const confirmChecked = document.getElementById('hlConfirmCheck').checked;
+  const guardianName = document.getElementById('hlGuardianName').value.trim();
+
+  // 비동의 상태로 제출되는 일이 없도록 동의 체크가 필수입니다.
+  if (!confirmChecked) return errEl.textContent = '위 내용에 동의해야 제출할 수 있습니다.';
+  if (!guardianName) return errEl.textContent = '학부모(보호자) 성명을 입력해 주세요.';
+  if (signaturePads.hlSignature.isEmpty()) return errEl.textContent = '보호자 서명을 받아 주세요.';
+
+  const btn = document.getElementById('hlSubmitBtn');
+  btn.disabled = true; btn.textContent = '제출 중…';
+
+  const res = await apiPost('submitConsent', {
+    grade: student.grade, class: student.class, number: student.number, name: student.name,
+    emergency: window.__emgData,
+    health_log: {
+      guardian_name_typed: guardianName,
+      signature_image_base64: signaturePads.hlSignature.toDataURL()
+    }
+  });
+
+  btn.disabled = false; btn.textContent = '제출하기 →';
+  if (!res.ok) { errEl.textContent = res.message || '제출 중 오류가 발생했습니다.'; return; }
+  showCard('doneCard');
+});
 
 /* show_if 평가 — "q11=지체장애" 처럼 단일 값, "q11=시력장애|청력장애" 처럼 |로 여러 값 지정 가능 */
 function evalShowIf(showIf) {
@@ -941,7 +1277,14 @@ nextBtn.addEventListener('click', async () => {
       nextBtn.disabled = false;
       nextBtn.textContent = '제출하기';
       if (!res.ok) { alert(res.message || '제출 중 오류가 발생했습니다.'); return; }
-      showCard('doneCard');
+
+      // 건강조사 제출이 끝나면 다시 인증하지 않고 바로 응급처치 동의서(1/2)로 이어서 진행한다.
+      const initRes = await apiGet('initConsent', {});
+      if (!initRes.ok) { alert('건강조사는 제출되었지만 동의서 양식을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'); return; }
+      FORMS = initRes.forms;
+      renderEmergencyForm_();
+      showCard('emergencyCard');
+      document.getElementById('consentProgress').textContent = '1 / 2 단계 — 응급처치 동의서';
       return;
     }
 
