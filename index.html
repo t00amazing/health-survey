@@ -216,7 +216,7 @@
   .notice-box.warn strong { color: var(--danger); }
 
   .sig-wrap { border: 2px solid var(--border-strong); border-radius: var(--radius-md); background: #FDFBF4; margin-bottom: 10px; touch-action: none; }
-  canvas.sig-canvas { display: block; width: 100%; height: 160px; }
+  canvas.sig-canvas { display: block; width: 100%; height: 160px; touch-action: none; }
   .sig-actions { display: flex; justify-content: flex-end; margin-bottom: 16px; }
   .sig-clear { font-size: 12.5px; color: var(--ink-soft); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; }
 
@@ -364,16 +364,18 @@
   .done-title { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
   .done-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin: 0; }
 
+  .unsub-wrap { overflow-x: auto; margin-top: 18px; }
   table.unsub {
     width: 100%;
+    min-width: 480px;
     border-collapse: collapse;
-    margin-top: 18px;
-    font-size: 14.5px;
+    font-size: 14px;
   }
   table.unsub th, table.unsub td {
     text-align: left;
     padding: 10px 8px;
     border-bottom: 1px solid var(--border);
+    white-space: nowrap;
   }
   table.unsub th { color: var(--ink-soft); font-weight: 600; font-size: 12.5px; }
 
@@ -427,7 +429,7 @@
 
     <div class="btn-row">
       <button class="pill pill-khaki" id="startSurveyBtn" disabled>건강조사 참여하기 →</button>
-      <button class="pill pill-khaki" id="checkUnsubmittedBtn" disabled>미제출자 조회 →</button>
+      <button class="pill pill-khaki" id="checkUnsubmittedBtn" disabled>제출여부 확인 →</button>
     </div>
     <p class="error" id="authError"></p>
   </div>
@@ -562,17 +564,10 @@
     </div>
   </div>
 
-  <!-- 6. 미제출자 조회 화면 -->
+  <!-- 6. 제출여부 확인 화면 -->
   <div class="card hidden" id="unsubCard">
     <a class="back-link" id="unsubBackLink">← 처음으로</a>
-    <div class="field">
-      <label>조회 대상</label>
-      <select id="formTypeSelect">
-        <option value="survey">학생 건강조사</option>
-        <option value="emergency_care">응급처치 동의서</option>
-        <option value="health_log_use">온라인보건일지 동의서</option>
-      </select>
-    </div>
+    <p class="subtitle" id="unsubTargetLabel" style="margin-bottom:14px;"></p>
     <div class="btn-row">
       <button class="pill pill-khaki" style="flex:1;" id="fetchUnsubBtn">조회하기 →</button>
     </div>
@@ -703,6 +698,20 @@ function demoGet_(action, params) {
     const unsubmitted = roster.filter(r => submitted.indexOf(String(r.number)) === -1)
       .map(r => ({ number: r.number, name: r.name }));
     return { ok: true, unsubmitted };
+  }
+  if (action === 'submissionStatus') {
+    const key = `${params.grade}-${params.class}`;
+    const surveySubmitted = DEMO.submittedSurveyNumbers[key] || [];
+    // 데모용 예시: 1번 학생만 동의서 두 개를 다 제출한 것으로 가정
+    const consentSubmitted = ['1'];
+    const roster = DEMO.roster.filter(r => String(r.grade) === params.grade && String(r.class) === params.class);
+    const students = roster.map(r => ({
+      grade: r.grade, class: r.class, number: r.number, name: r.name,
+      survey: surveySubmitted.indexOf(String(r.number)) !== -1,
+      emergency: consentSubmitted.indexOf(String(r.number)) !== -1,
+      health_log: consentSubmitted.indexOf(String(r.number)) !== -1
+    }));
+    return { ok: true, students };
   }
   return { ok: false, message: '알 수 없는 요청입니다.' };
 }
@@ -855,7 +864,9 @@ function initSignaturePad_(canvasId) {
   function end() { drawing = false; }
   canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
   window.addEventListener('mouseup', end);
-  canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move); canvas.addEventListener('touchend', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end, { passive: false });
   signaturePads[canvasId] = {
     clear: () => { ctx.clearRect(0, 0, canvas.width, canvas.height); hasDrawn = false; },
     isEmpty: () => !hasDrawn,
@@ -1071,6 +1082,8 @@ checkUnsubmittedBtn.addEventListener('click', () => {
   document.getElementById('unsubResult').innerHTML = '';
   document.getElementById('unsubCard').dataset.grade = gradeSelect.value;
   document.getElementById('unsubCard').dataset.class = classSelect.value;
+  document.getElementById('unsubTargetLabel').textContent =
+    `${gradeSelect.value}학년 ${classSelect.value}반 제출여부를 확인합니다.`;
 });
 
 /* 설문 렌더링 */
@@ -1317,24 +1330,27 @@ document.getElementById('surveyBackLink').addEventListener('click', () => {
   if (confirm('처음으로 돌아가면 입력한 내용이 사라집니다. 계속할까요?')) location.reload();
 });
 
-/* 미제출자 조회 */
+/* 제출여부 확인 (건강조사·응급처치동의서·보건일지동의서 한번에) */
 document.getElementById('unsubBackLink').addEventListener('click', () => showCard('authCard'));
 
 document.getElementById('fetchUnsubBtn').addEventListener('click', async () => {
   const card = document.getElementById('unsubCard');
-  const formType = document.getElementById('formTypeSelect').value;
-  const res = await apiGet('unsubmitted', { grade: card.dataset.grade, class: card.dataset.class, formType });
+  const res = await apiGet('submissionStatus', { grade: card.dataset.grade, class: card.dataset.class });
   const resultEl = document.getElementById('unsubResult');
   if (!res.ok) { resultEl.innerHTML = `<p class="empty-note">${res.message}</p>`; return; }
-  if (res.unsubmitted.length === 0) {
-    resultEl.innerHTML = '<p class="empty-note">🎉 전원 제출 완료했습니다!</p>';
+  if (res.students.length === 0) {
+    resultEl.innerHTML = '<p class="empty-note">조회된 학생이 없습니다.</p>';
     return;
   }
+  const mark = (v) => v ? '✅' : '❌';
   resultEl.innerHTML = `
-    <table class="unsub">
-      <thead><tr><th>번호</th><th>이름</th></tr></thead>
-      <tbody>${res.unsubmitted.map(r => `<tr><td>${r.number}</td><td>${r.name}</td></tr>`).join('')}</tbody>
-    </table>`;
+    <div class="unsub-wrap"><table class="unsub">
+      <thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th><th>학생건강조사</th><th>응급처치동의서</th><th>온라인보건일지</th></tr></thead>
+      <tbody>${res.students.map(s => `<tr>
+        <td>${s.grade}</td><td>${s.class}</td><td>${s.number}</td><td>${s.name}</td>
+        <td>${mark(s.survey)}</td><td>${mark(s.emergency)}</td><td>${mark(s.health_log)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
 });
 
 init();
