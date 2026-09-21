@@ -136,6 +136,9 @@
     </div>
     <button class="pill pill-khaki" id="loginBtn" style="width:100%;">로그인 →</button>
     <p class="error" id="loginError"></p>
+    <div class="row" style="margin-top:12px;">
+      <button class="pill pill-outline" id="backToStudentBtn" style="width:100%;">← 학생 화면으로 돌아가기</button>
+    </div>
   </div>
 
   <!-- 관리자 화면 -->
@@ -444,6 +447,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 });
 
 document.getElementById('logoutBtn').addEventListener('click', () => location.reload());
+document.getElementById('backToStudentBtn').addEventListener('click', () => { location.href = 'index.html'; });
 
 /* ── 탭 전환 ─────────────────────────────────────────── */
 document.querySelectorAll('.tab-btn').forEach(btn => {
