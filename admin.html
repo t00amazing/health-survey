@@ -221,9 +221,10 @@
       <div class="field">
         <label>조회 대상 유형</label>
         <select id="unsubFormType">
-          <option value="survey">학생 건강조사</option>
-          <option value="emergency_care">응급처치 동의서 (추후 지원)</option>
-          <option value="health_log_use">온라인보건일지 동의서 (추후 지원)</option>
+          <option value="survey">학생 건강조사 (미제출자만)</option>
+          <option value="emergency_care">응급처치 동의서 (미제출자만)</option>
+          <option value="health_log_use">온라인보건일지 동의서 (미제출자만)</option>
+          <option value="all_status">전체 제출현황 한번에 보기 (건강조사+응급처치+보건일지)</option>
         </select>
       </div>
       <div class="row">
@@ -233,6 +234,9 @@
       <div id="unsubChipList" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;"></div>
       <p class="error" id="unsubError"></p>
       <div id="unsubResult"></div>
+      <div id="unsubExportWrap" class="hidden">
+        <button class="pill pill-outline" id="unsubExportBtn" style="width:100%; margin-top:14px;">엑셀로 내보내기 ↓</button>
+      </div>
     </div>
 
     <!-- 탭 4: 통계 -->
@@ -414,6 +418,28 @@ function demoGet_(action, params) {
     });
     const groupList = Object.values(groups).sort((a, b) => (Number(a.grade) - Number(b.grade)) || (Number(a.class) - Number(b.class)));
     return { ok: true, groups: groupList };
+  }
+  if (action === 'submissionStatus') {
+    const grade = params.grade || '', classNo = params.class || '';
+    let roster = DEMO.roster;
+    if (grade) roster = roster.filter(r => String(r.grade) === String(grade));
+    if (classNo) roster = roster.filter(r => String(r.class) === String(classNo));
+
+    const surveyKeys = DEMO.responses.map(r => `${r.grade}-${r.class}-${r.number}`);
+    // 데모용 예시: 박보건(1-1-1)만 동의서 두 개를 다 제출한 것으로 가정
+    const emergencyKeys = ['1-1-1'];
+    const healthLogKeys = ['1-1-1'];
+
+    const students = roster.map(r => {
+      const key = `${r.grade}-${r.class}-${r.number}`;
+      return {
+        grade: r.grade, class: r.class, number: r.number, name: r.name,
+        survey: surveyKeys.indexOf(key) !== -1,
+        emergency: emergencyKeys.indexOf(key) !== -1,
+        health_log: healthLogKeys.indexOf(key) !== -1
+      };
+    }).sort((a, b) => (Number(a.grade) - Number(b.grade)) || (Number(a.class) - Number(b.class)) || (Number(a.number) - Number(b.number)));
+    return { ok: true, students: students };
   }
   return { ok: false, message: '알 수 없는 요청입니다.' };
 }
@@ -732,6 +758,8 @@ document.getElementById('unsubAddChipBtn').addEventListener('click', () => {
   renderUnsubChips_();
 });
 
+let lastUnsubExportRows = []; // 엑셀 내보내기용 — 마지막으로 화면에 그린 표 데이터(평면화)
+
 document.getElementById('unsubFetchBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('unsubError');
   errEl.textContent = '';
@@ -744,15 +772,46 @@ document.getElementById('unsubFetchBtn').addEventListener('click', async () => {
   }
 
   const resultEl = document.getElementById('unsubResult');
+  const exportWrap = document.getElementById('unsubExportWrap');
+  exportWrap.classList.add('hidden');
+  lastUnsubExportRows = [];
   resultEl.innerHTML = '<p class="empty-note">조회 중…</p>';
 
-  // 각 대상마다 조회해서 하나의 그룹 목록으로 합침
+  if (formType === 'all_status') {
+    // 건강조사·응급처치·보건일지 제출여부를 한 번에 보여주는 현황판
+    let allStudents = [];
+    for (const t of targets) {
+      const res = await apiGet('submissionStatus', { grade: t.grade, class: t.class });
+      if (!res.ok) { errEl.textContent = res.message || '조회 중 오류가 발생했습니다.'; resultEl.innerHTML = ''; return; }
+      allStudents = allStudents.concat(res.students);
+    }
+    if (allStudents.length === 0) {
+      resultEl.innerHTML = '<p class="empty-note">조회된 학생이 없습니다.</p>';
+      return;
+    }
+    const mark = (v) => v ? '✅' : '❌';
+    resultEl.innerHTML = `
+      <div class="table-wrap"><table>
+        <thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th><th>건강조사</th><th>응급처치동의서</th><th>보건일지동의서</th></tr></thead>
+        <tbody>${allStudents.map(s => `<tr>
+          <td>${s.grade}</td><td>${s.class}</td><td>${s.number}</td><td>${s.name}</td>
+          <td>${mark(s.survey)}</td><td>${mark(s.emergency)}</td><td>${mark(s.health_log)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+    lastUnsubExportRows = allStudents.map(s => ({
+      학년: s.grade, 반: s.class, 번호: s.number, 이름: s.name,
+      건강조사: s.survey ? '제출' : '미제출', 응급처치동의서: s.emergency ? '제출' : '미제출', 보건일지동의서: s.health_log ? '제출' : '미제출'
+    }));
+    exportWrap.classList.remove('hidden');
+    return;
+  }
+
+  // 특정 유형(건강조사/응급처치/보건일지) 미제출자만 보기
   let allGroups = [];
   for (const t of targets) {
     const res = await apiGet('unsubmitted', { grade: t.grade, class: t.class, formType });
     if (!res.ok) { errEl.textContent = res.message || '조회 중 오류가 발생했습니다.'; resultEl.innerHTML = ''; return; }
     if (res.unsubmitted) {
-      // 학년·반을 둘 다 지정한 단순 조회 결과
       allGroups.push({ grade: t.grade, class: t.class, unsubmitted: res.unsubmitted });
     } else {
       allGroups = allGroups.concat(res.groups);
@@ -765,15 +824,29 @@ document.getElementById('unsubFetchBtn').addEventListener('click', async () => {
     return;
   }
 
-  resultEl.innerHTML = allGroups
-    .filter(g => g.unsubmitted.length > 0)
+  const nonEmptyGroups = allGroups.filter(g => g.unsubmitted.length > 0);
+  resultEl.innerHTML = nonEmptyGroups
     .map(g => `
       <div class="group-heading">${targetLabel_(g)} — 미제출 ${g.unsubmitted.length}명</div>
       <div class="table-wrap"><table>
-        <thead><tr><th>번호</th><th>이름</th></tr></thead>
-        <tbody>${g.unsubmitted.map(r => `<tr><td>${r.number}</td><td>${r.name}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th></tr></thead>
+        <tbody>${g.unsubmitted.map(r => `<tr><td>${g.grade}</td><td>${g.class}</td><td>${r.number}</td><td>${r.name}</td></tr>`).join('')}</tbody>
       </table></div>`)
     .join('');
+
+  nonEmptyGroups.forEach(g => {
+    g.unsubmitted.forEach(r => lastUnsubExportRows.push({ 학년: g.grade, 반: g.class, 번호: r.number, 이름: r.name }));
+  });
+  exportWrap.classList.remove('hidden');
+});
+
+document.getElementById('unsubExportBtn').addEventListener('click', () => {
+  if (!lastUnsubExportRows.length) return;
+  const ws = XLSX.utils.json_to_sheet(lastUnsubExportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '조회결과');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `미제출자조회_${dateStr}.xlsx`);
 });
 
 /* ── 탭4: 통계 ──────────────────────────────────────── */
