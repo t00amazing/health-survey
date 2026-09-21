@@ -545,6 +545,10 @@
     </div>
 
     <div class="row" style="margin-top:22px;"><button class="pill pill-khaki" id="hlSubmitBtn" style="width:100%;">제출하기 →</button></div>
+    <div class="notice-box hidden" id="hlSubmittingNotice" style="margin-top:14px; text-align:center;">
+      ⏳ <strong>제출 처리 중입니다. 화면을 벗어나지 말고 잠시만 기다려 주세요.</strong><br>
+      동의서 PDF를 만드는 과정이 있어 <strong>최대 30초 정도</strong> 걸릴 수 있습니다.
+    </div>
     <p class="error" id="hlError"></p>
   </div>
 
@@ -953,7 +957,9 @@ document.getElementById('hlSubmitBtn').addEventListener('click', async () => {
   if (signaturePads.hlSignature.isEmpty()) return errEl.textContent = '보호자 서명을 받아 주세요.';
 
   const btn = document.getElementById('hlSubmitBtn');
+  const waitNotice = document.getElementById('hlSubmittingNotice');
   btn.disabled = true; btn.textContent = '제출 중…';
+  waitNotice.classList.remove('hidden');
 
   const res = await apiPost('submitConsent', {
     grade: student.grade, class: student.class, number: student.number, name: student.name,
@@ -964,6 +970,7 @@ document.getElementById('hlSubmitBtn').addEventListener('click', async () => {
     }
   });
 
+  waitNotice.classList.add('hidden');
   btn.disabled = false; btn.textContent = '제출하기 →';
   if (!res.ok) { errEl.textContent = res.message || '제출 중 오류가 발생했습니다.'; return; }
   showCard('doneCard');
